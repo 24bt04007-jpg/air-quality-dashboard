@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Air Quality Monitoring Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 20px;
+            margin: 15px auto;
+            width: 300px;
+            border-radius: 12px;
+        }
+
+        canvas {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🌍 Air Quality Monitoring</h1>
+
+    <div class="card">
+        <h2>Temperature</h2>
+        <p id="temp">-- °C</p>
+    </div>
+
+    <div class="card">
+        <h2>Humidity</h2>
+        <p id="hum">-- %</p>
+    </div>
+
+    <div class="card">
+        <h2>Air Quality</h2>
+        <p id="gas">--</p>
+    </div>
+
+    <canvas id="chart"></canvas>
+
+    <script>
+        /* 🔧 CHANGE THESE TWO VALUES */
+        const CHANNEL_ID = "3208976";
+        const READ_API_KEY = "OACUOG6F0U6AJRIT";
+
+        const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=10`;
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                const feeds = data.feeds;
+
+                const labels = feeds.map(f => f.created_at);
+                const tempData = feeds.map(f => Number(f.field1));
+                const humData = feeds.map(f => Number(f.field2));
+                const gasData = feeds.map(f => f.field3);
+
+                document.getElementById("temp").innerText =
+                    tempData[tempData.length - 1] + " °C";
+
+                document.getElementById("hum").innerText =
+                    humData[humData.length - 1] + " %";
+
+                document.getElementById("gas").innerText =
+                    gasData[gasData.length - 1] == "1"
+                        ? "🚨 GAS DETECTED"
+                        : "✅ SAFE";
+
+                new Chart(document.getElementById("chart"), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Temperature (°C)',
+                                data: tempData,
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Humidity (%)',
+                                data: humData,
+                                borderWidth: 2
+                            }
+                        ]
+                    }
+                });
+            });
+    </script>
+
+</body>
+
+</html>
