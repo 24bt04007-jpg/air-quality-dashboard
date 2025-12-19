@@ -52,52 +52,69 @@
     <canvas id="chart"></canvas>
 
     <script>
-        /* 🔧 CHANGE THESE TWO VALUES */
+        /* 🔧 YOUR THINGSPEAK DETAILS */
         const CHANNEL_ID = "3208976";
         const READ_API_KEY = "OACUOG6F0U6AJRIT";
 
         const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=10`;
 
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                const feeds = data.feeds;
+        /* ---------- CREATE CHART ONCE ---------- */
+        const ctx = document.getElementById("chart");
 
-                const labels = feeds.map(f => f.created_at);
-                const tempData = feeds.map(f => Number(f.field1));
-                const humData = feeds.map(f => Number(f.field2));
-                const gasData = feeds.map(f => f.field3);
-
-                document.getElementById("temp").innerText =
-                    tempData[tempData.length - 1] + " °C";
-
-                document.getElementById("hum").innerText =
-                    humData[humData.length - 1] + " %";
-
-                document.getElementById("gas").innerText =
-                    gasData[gasData.length - 1] == "1"
-                        ? "🚨 GAS DETECTED"
-                        : "✅ SAFE";
-
-                new Chart(document.getElementById("chart"), {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: 'Temperature (°C)',
-                                data: tempData,
-                                borderWidth: 2
-                            },
-                            {
-                                label: 'Humidity (%)',
-                                data: humData,
-                                borderWidth: 2
-                            }
-                        ]
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Temperature (°C)',
+                        data: [],
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Humidity (%)',
+                        data: [],
+                        borderWidth: 2
                     }
+                ]
+            }
+        });
+
+        /* ---------- FUNCTION TO FETCH & UPDATE DATA ---------- */
+        function fetchData() {
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    const feeds = data.feeds;
+
+                    const labels = feeds.map(f => f.created_at);
+                    const tempData = feeds.map(f => Number(f.field1));
+                    const humData = feeds.map(f => Number(f.field2));
+                    const gasData = feeds.map(f => f.field3);
+
+                    // Update text values
+                    document.getElementById("temp").innerText =
+                        tempData[tempData.length - 1] + " °C";
+
+                    document.getElementById("hum").innerText =
+                        humData[humData.length - 1] + " %";
+
+                    document.getElementById("gas").innerText =
+                        gasData[gasData.length - 1] == "1"
+                            ? "🚨 GAS DETECTED"
+                            : "✅ SAFE";
+
+                    // Update chart
+                    chart.data.labels = labels;
+                    chart.data.datasets[0].data = tempData;
+                    chart.data.datasets[1].data = humData;
+                    chart.update();
                 });
-            });
+        }
+
+        /* ---------- INITIAL LOAD + AUTO REFRESH ---------- */
+        fetchData();                     // load once immediately
+        setInterval(fetchData, 20000);   // refresh every 20 seconds
     </script>
 
 </body>
