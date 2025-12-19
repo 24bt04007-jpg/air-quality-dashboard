@@ -15,17 +15,47 @@
             padding: 20px;
         }
 
+        h1 {
+            margin-bottom: 30px;
+        }
+
         .card {
             background: #1e293b;
             padding: 20px;
             margin: 15px auto;
-            width: 300px;
+            width: 320px;
             border-radius: 12px;
         }
 
+        .charts {
+            width: 95%;
+            margin: auto;
+        }
+
         canvas {
-            max-width: 600px;
-            margin: 20px auto;
+            background: #020617;
+            margin: 40px 0;
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .log {
+            background: #020617;
+            width: 95%;
+            margin: 30px auto;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .safe {
+            color: #22c55e;
+        }
+
+        .danger {
+            color: #ef4444;
         }
     </style>
 </head>
@@ -34,6 +64,7 @@
 
     <h1>🌍 Air Quality Monitoring</h1>
 
+    <!-- Live Value Cards -->
     <div class="card">
         <h2>Temperature</h2>
         <p id="temp">-- °C</p>
@@ -49,74 +80,108 @@
         <p id="gas">--</p>
     </div>
 
-    <canvas id="chart"></canvas>
+    <!-- Charts -->
+    <div class="charts">
+        <h2>📈 Temperature Trend</h2>
+        <canvas id="tempChart"></canvas>
+
+        <h2>📈 Humidity Trend</h2>
+        <canvas id="humChart"></canvas>
+
+        <h2>📈 Combined Trend</h2>
+        <canvas id="mergedChart"></canvas>
+    </div>
+
+    <!-- Gas Log -->
+    <div class="log">
+        <h2>🕒 Gas Detection Log</h2>
+        <ul id="gasLog"></ul>
+    </div>
 
     <script>
-        /* 🔧 YOUR THINGSPEAK DETAILS */
+        /* 🔧 THINGSPEAK DETAILS */
         const CHANNEL_ID = "3208976";
         const READ_API_KEY = "OACUOG6F0U6AJRIT";
 
-        const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=10`;
+        const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=20`;
 
-        /* ---------- CREATE CHART ONCE ---------- */
-        const ctx = document.getElementById("chart");
+        /* ---------- CHART SETUP ---------- */
+        const tempChart = new Chart(document.getElementById("tempChart"), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Temperature (°C)', data: [], borderWidth: 2 }] }
+        });
 
-        const chart = new Chart(ctx, {
+        const humChart = new Chart(document.getElementById("humChart"), {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Humidity (%)', data: [], borderWidth: 2 }] }
+        });
+
+        const mergedChart = new Chart(document.getElementById("mergedChart"), {
             type: 'line',
             data: {
                 labels: [],
                 datasets: [
-                    {
-                        label: 'Temperature (°C)',
-                        data: [],
-                        borderWidth: 2
-                    },
-                    {
-                        label: 'Humidity (%)',
-                        data: [],
-                        borderWidth: 2
-                    }
+                    { label: 'Temperature (°C)', data: [], borderWidth: 2 },
+                    { label: 'Humidity (%)', data: [], borderWidth: 2 }
                 ]
             }
         });
 
-        /* ---------- FUNCTION TO FETCH & UPDATE DATA ---------- */
+        /* ---------- FETCH + UPDATE ---------- */
         function fetchData() {
             fetch(url)
                 .then(res => res.json())
                 .then(data => {
                     const feeds = data.feeds;
 
-                    const labels = feeds.map(f => f.created_at);
+                    const labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString());
                     const tempData = feeds.map(f => Number(f.field1));
                     const humData = feeds.map(f => Number(f.field2));
                     const gasData = feeds.map(f => f.field3);
 
-                    // Update text values
+                    // Live cards
                     document.getElementById("temp").innerText =
-                        tempData[tempData.length - 1] + " °C";
-
+                        tempData.at(-1) + " °C";
                     document.getElementById("hum").innerText =
-                        humData[humData.length - 1] + " %";
+                        humData.at(-1) + " %";
 
-                    document.getElementById("gas").innerText =
-                        gasData[gasData.length - 1] == "1"
-                            ? "🚨 GAS DETECTED"
-                            : "✅ SAFE";
+                    const gasStatus = gasData.at(-1) == "1";
+                    document.getElementById("gas").innerHTML =
+                        gasStatus
+                            ? "<span class='danger'>🚨 GAS DETECTED</span>"
+                            : "<span class='safe'>✅ SAFE</span>";
 
-                    // Update chart
-                    chart.data.labels = labels;
-                    chart.data.datasets[0].data = tempData;
-                    chart.data.datasets[1].data = humData;
-                    chart.update();
+                    // Update charts
+                    tempChart.data.labels = labels;
+                    tempChart.data.datasets[0].data = tempData;
+                    tempChart.update();
+
+                    humChart.data.labels = labels;
+                    humChart.data.datasets[0].data = humData;
+                    humChart.update();
+
+                    mergedChart.data.labels = labels;
+                    mergedChart.data.datasets[0].data = tempData;
+                    mergedChart.data.datasets[1].data = humData;
+                    mergedChart.update();
+
+                    // Gas log
+                    const log = document.getElementById("gasLog");
+                    log.innerHTML = "";
+                    feeds.slice().reverse().forEach(f => {
+                        const li = document.createElement("li");
+                        li.innerHTML = `${new Date(f.created_at).toLocaleString()} → 
+                            <span class="${f.field3 == "1" ? "danger" : "safe"}">
+                            ${f.field3 == "1" ? "GAS DETECTED" : "SAFE"}
+                            </span>`;
+                        log.appendChild(li);
+                    });
                 });
         }
 
-        /* ---------- INITIAL LOAD + AUTO REFRESH ---------- */
-        fetchData();                     // load once immediately
-        setInterval(fetchData, 20000);   // refresh every 20 seconds
+        fetchData();
+        setInterval(fetchData, 20000);
     </script>
 
 </body>
-
 </html>
