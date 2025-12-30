@@ -2,186 +2,232 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Air Quality Monitoring Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <title>Air Quality Monitoring Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #0f172a;
-            color: #e5e7eb;
-            text-align: center;
-            padding: 20px;
-        }
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      text-align: center;
+      padding: 20px;
+    }
 
-        h1 {
-            margin-bottom: 30px;
-        }
+    .card {
+      background: #1e293b;
+      padding: 20px;
+      margin: 15px auto;
+      width: 320px;
+      border-radius: 12px;
+    }
 
-        .card {
-            background: #1e293b;
-            padding: 20px;
-            margin: 15px auto;
-            width: 320px;
-            border-radius: 12px;
-        }
+    canvas {
+      background: #020617;
+      margin: 40px 0;
+      padding: 15px;
+      border-radius: 12px;
+    }
 
-        .charts {
-            width: 95%;
-            margin: auto;
-        }
+    .controls button {
+      margin: 5px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
 
-        canvas {
-            background: #020617;
-            margin: 40px 0;
-            padding: 15px;
-            border-radius: 12px;
-        }
+    .log {
+      background: #020617;
+      width: 95%;
+      margin: 30px auto;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: left;
+      max-height: 220px;
+      overflow-y: auto;
+    }
 
-        .log {
-            background: #020617;
-            width: 95%;
-            margin: 30px auto;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: left;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .safe {
-            color: #22c55e;
-        }
-
-        .danger {
-            color: #ef4444;
-        }
-    </style>
+    .safe { color: #22c55e; }
+    .danger { color: #ef4444; }
+  </style>
 </head>
 
 <body>
 
-    <h1>🌍 Air Quality Monitoring</h1>
+  <h1>🌍 Air Quality Monitoring</h1>
+  <p id="lastUpdated">Last updated: --</p>
 
-    <!-- Live Value Cards -->
-    <div class="card">
-        <h2>Temperature</h2>
-        <p id="temp">-- °C</p>
-    </div>
+  <div class="card">
+    <h2>Temperature</h2>
+    <p id="temp">-- °C</p>
+  </div>
 
-    <div class="card">
-        <h2>Humidity</h2>
-        <p id="hum">-- %</p>
-    </div>
+  <div class="card">
+    <h2>Humidity</h2>
+    <p id="hum">-- %</p>
+  </div>
 
-    <div class="card">
-        <h2>Air Quality</h2>
-        <p id="gas">--</p>
-    </div>
+  <div class="card">
+    <h2>Air Quality</h2>
+    <p id="gas">--</p>
+  </div>
 
-    <!-- Charts -->
-    <div class="charts">
-        <h2>📈 Temperature Trend</h2>
-        <canvas id="tempChart"></canvas>
+  <div class="controls">
+    <button onclick="setRange('24h')">Last 24h</button>
+    <button onclick="setRange('7d')">Last 7 Days</button>
+    <button onclick="setRange('all')">All</button>
+    <button onclick="downloadCSV()">⬇ CSV</button>
+    <button onclick="downloadChart()">🖼 Chart</button>
+  </div>
 
-        <h2>📈 Humidity Trend</h2>
-        <canvas id="humChart"></canvas>
+  <canvas id="mergedChart"></canvas>
 
-        <h2>📈 Combined Trend</h2>
-        <canvas id="mergedChart"></canvas>
-    </div>
+  <div class="log">
+    <h2>🕒 Gas Detection Log</h2>
+    <ul id="gasLog"></ul>
+  </div>
 
-    <!-- Gas Log -->
-    <div class="log">
-        <h2>🕒 Gas Detection Log</h2>
-        <ul id="gasLog"></ul>
-    </div>
+  <script>
+    const CHANNEL_ID = "3208976";
+    const READ_API_KEY = "OACUOG6F0U6AJRIT";
+    const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=200`;
 
-    <script>
-        /* 🔧 THINGSPEAK DETAILS */
-        const CHANNEL_ID = "3208976";
-        const READ_API_KEY = "OACUOG6F0U6AJRIT";
+    let rawFeeds = [];
+    let currentRange = "all";
 
-        const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=20`;
+    const TEMP_COLOR = "#f97316";
+    const HUM_COLOR = "#38bdf8";
 
-        /* ---------- CHART SETUP ---------- */
-        const tempChart = new Chart(document.getElementById("tempChart"), {
-            type: 'line',
-            data: { labels: [], datasets: [{ label: 'Temperature (°C)', data: [], borderWidth: 2 }] }
-        });
+    function fullTimestamp(d) {
+      return d.toLocaleString("en-GB", {
+        day: "2-digit", month: "long", year: "numeric",
+        hour: "2-digit", minute: "2-digit", second: "2-digit"
+      });
+    }
 
-        const humChart = new Chart(document.getElementById("humChart"), {
-            type: 'line',
-            data: { labels: [], datasets: [{ label: 'Humidity (%)', data: [], borderWidth: 2 }] }
-        });
+    function logTimestamp(d) {
+      return d.toLocaleString("en-GB", {
+        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+      });
+    }
 
-        const mergedChart = new Chart(document.getElementById("mergedChart"), {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    { label: 'Temperature (°C)', data: [], borderWidth: 2 },
-                    { label: 'Humidity (%)', data: [], borderWidth: 2 }
-                ]
-            }
-        });
-
-        /* ---------- FETCH + UPDATE ---------- */
-        function fetchData() {
-            fetch(url)
-                .then(res => res.json())
-                .then(data => {
-                    const feeds = data.feeds;
-
-                    const labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString());
-                    const tempData = feeds.map(f => Number(f.field1));
-                    const humData = feeds.map(f => Number(f.field2));
-                    const gasData = feeds.map(f => f.field3);
-
-                    // Live cards
-                    document.getElementById("temp").innerText =
-                        tempData.at(-1) + " °C";
-                    document.getElementById("hum").innerText =
-                        humData.at(-1) + " %";
-
-                    const gasStatus = gasData.at(-1) == "1";
-                    document.getElementById("gas").innerHTML =
-                        gasStatus
-                            ? "<span class='danger'>🚨 GAS DETECTED</span>"
-                            : "<span class='safe'>✅ SAFE</span>";
-
-                    // Update charts
-                    tempChart.data.labels = labels;
-                    tempChart.data.datasets[0].data = tempData;
-                    tempChart.update();
-
-                    humChart.data.labels = labels;
-                    humChart.data.datasets[0].data = humData;
-                    humChart.update();
-
-                    mergedChart.data.labels = labels;
-                    mergedChart.data.datasets[0].data = tempData;
-                    mergedChart.data.datasets[1].data = humData;
-                    mergedChart.update();
-
-                    // Gas log
-                    const log = document.getElementById("gasLog");
-                    log.innerHTML = "";
-                    feeds.slice().reverse().forEach(f => {
-                        const li = document.createElement("li");
-                        li.innerHTML = `${new Date(f.created_at).toLocaleString()} → 
-                            <span class="${f.field3 == "1" ? "danger" : "safe"}">
-                            ${f.field3 == "1" ? "GAS DETECTED" : "SAFE"}
-                            </span>`;
-                        log.appendChild(li);
-                    });
-                });
+    const chart = new Chart(document.getElementById("mergedChart"), {
+      type: "line",
+      data: { labels: [], datasets: [] },
+      options: {
+        scales: {
+          x: { ticks: { maxRotation: 0 } }
         }
+      }
+    });
 
-        fetchData();
-        setInterval(fetchData, 20000);
-    </script>
+    function setRange(r) {
+      currentRange = r;
+      updateUI();
+    }
+
+    function updateUI() {
+      let feeds = [...rawFeeds];
+
+      if (currentRange !== "all") {
+        const now = new Date();
+        const cutoff = new Date(now);
+        cutoff.setHours(cutoff.getHours() - (currentRange === "24h" ? 24 : 168));
+        feeds = feeds.filter(f => new Date(f.created_at) >= cutoff);
+      }
+
+      const labels = feeds.map(f => fullTimestamp(new Date(f.created_at)));
+      const tempData = feeds.map(f => Number(f.field1));
+      const humData = feeds.map(f => Number(f.field2));
+
+      const gasMarkers = feeds.map((f, i) =>
+        f.field3 == "1" ? {
+          x: labels[i],
+          borderColor: "#ef4444",
+          borderWidth: 2,
+          borderDash: [6, 6]
+        } : null
+      ).filter(Boolean);
+
+      chart.data = {
+        labels,
+        datasets: [
+          {
+            label: "Temperature (°C)",
+            data: tempData,
+            borderColor: TEMP_COLOR,
+            tension: 0.3
+          },
+          {
+            label: "Humidity (%)",
+            data: humData,
+            borderColor: HUM_COLOR,
+            tension: 0.3
+          }
+        ]
+      };
+
+      chart.options.plugins = {
+        annotation: { annotations: gasMarkers }
+      };
+
+      chart.update();
+
+      const last = feeds.at(-1);
+      document.getElementById("temp").innerText = last.field1 + " °C";
+      document.getElementById("hum").innerText = last.field2 + " %";
+      document.getElementById("gas").innerHTML =
+        last.field3 == "1"
+          ? "<span class='danger'>🚨 GAS DETECTED</span>"
+          : "<span class='safe'>✅ SAFE</span>";
+
+      document.getElementById("lastUpdated").innerText =
+        "Last updated: " + fullTimestamp(new Date(last.created_at));
+
+      const log = document.getElementById("gasLog");
+      log.innerHTML = "";
+      feeds.slice().reverse().forEach(f => {
+        if (f.field3 == "1") {
+          const li = document.createElement("li");
+          li.innerHTML = `${logTimestamp(new Date(f.created_at))} → <span class="danger">GAS DETECTED</span>`;
+          log.appendChild(li);
+        }
+      });
+    }
+
+    function downloadCSV() {
+      let csv = "Timestamp,Temperature,Humidity,Gas\n";
+      rawFeeds.forEach(f => {
+        csv += `${fullTimestamp(new Date(f.created_at))},${f.field1},${f.field2},${f.field3}\n`;
+      });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv]));
+      a.download = "air_quality_data.csv";
+      a.click();
+    }
+
+    function downloadChart() {
+      const a = document.createElement("a");
+      a.href = chart.canvas.toDataURL("image/png", 0.7);
+      a.download = "air_quality_chart.png";
+      a.click();
+    }
+
+    fetch(url).then(r => r.json()).then(d => {
+      rawFeeds = d.feeds;
+      updateUI();
+    });
+
+    setInterval(() => fetch(url).then(r => r.json()).then(d => {
+      rawFeeds = d.feeds;
+      updateUI();
+    }), 20000);
+  </script>
 
 </body>
 </html>
+
