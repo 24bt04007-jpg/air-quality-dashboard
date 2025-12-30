@@ -1,233 +1,301 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <title>Air Quality Monitoring Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<title>Air Quality Monitoring Dashboard</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #e5e7eb;
-      text-align: center;
-      padding: 20px;
-    }
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
 
-    .card {
-      background: #1e293b;
-      padding: 20px;
-      margin: 15px auto;
-      width: 320px;
-      border-radius: 12px;
-    }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+  padding: 20px;
+}
 
-    canvas {
-      background: #020617;
-      margin: 40px 0;
-      padding: 15px;
-      border-radius: 12px;
-    }
+h1, h2 {
+  text-align: center;
+}
 
-    .controls button {
-      margin: 5px;
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-    }
+.guide {
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
 
-    .log {
-      background: #020617;
-      width: 95%;
-      margin: 30px auto;
-      padding: 20px;
-      border-radius: 12px;
-      text-align: left;
-      max-height: 220px;
-      overflow-y: auto;
-    }
+.guide span {
+  font-weight: bold;
+  color: #38bdf8;
+}
 
-    .safe { color: #22c55e; }
-    .danger { color: #ef4444; }
-  </style>
+.cards {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: #020617;
+  padding: 20px;
+  border-radius: 12px;
+  width: 260px;
+  text-align: center;
+}
+
+.temp { color: #f97316; }
+.hum { color: #38bdf8; }
+.gas-safe { color: #22c55e; }
+.gas-danger { color: #ef4444; }
+
+.controls {
+  text-align: center;
+  margin: 25px 0;
+}
+
+.controls button, .controls input {
+  margin: 5px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+}
+
+button {
+  background: #2563eb;
+  color: white;
+  cursor: pointer;
+}
+
+canvas {
+  background: #020617;
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 20px;
+}
+
+.rangeLabel {
+  text-align: center;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+.log {
+  background: #020617;
+  padding: 15px;
+  border-radius: 12px;
+  margin-top: 25px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+</style>
 </head>
 
 <body>
 
-  <h1>🌍 Air Quality Monitoring</h1>
-  <p id="lastUpdated">Last updated: --</p>
+<h1>🌍 Air Quality Monitoring Dashboard</h1>
 
-  <div class="card">
-    <h2>Temperature</h2>
+<div class="guide">
+  <p><span>How to read the data:</span></p>
+  <ul>
+    <li>Hover on chart points to see the <b>exact timestamp</b></li>
+    <li>X-axis ticks are shown every <b>2 minutes</b> for readability</li>
+    <li><b>Gas = 1</b> → Gas detected (unsafe)</li>
+    <li><b>Gas = 0</b> → Safe air</li>
+    <li>Red vertical lines indicate <b>new day</b></li>
+  </ul>
+</div>
+
+<div class="cards">
+  <div class="card temp">
+    <h3>Temperature</h3>
     <p id="temp">-- °C</p>
   </div>
 
-  <div class="card">
-    <h2>Humidity</h2>
+  <div class="card hum">
+    <h3>Humidity</h3>
     <p id="hum">-- %</p>
   </div>
 
   <div class="card">
-    <h2>Air Quality</h2>
+    <h3>Gas Status</h3>
     <p id="gas">--</p>
   </div>
+</div>
 
-  <div class="controls">
-    <button onclick="setRange('24h')">Last 24h</button>
-    <button onclick="setRange('7d')">Last 7 Days</button>
-    <button onclick="setRange('all')">All</button>
-    <button onclick="downloadCSV()">⬇ CSV</button>
-    <button onclick="downloadChart()">🖼 Chart</button>
-  </div>
+<div class="controls">
+  <button onclick="setFilter('all')">All</button>
+  <button onclick="setFilter('7d')">Last 7 Days</button>
+  <button onclick="setFilter('1m')">Last 1 Month</button>
+  <input type="date" id="fromDate">
+  <input type="date" id="toDate">
+  <button onclick="setCustom()">Apply Date</button>
+  <br><br>
+  <button onclick="downloadCSV()">⬇ CSV</button>
+  <button onclick="downloadPNG()">🖼 Chart</button>
+</div>
 
-  <canvas id="mergedChart"></canvas>
+<p class="rangeLabel" id="rangeLabel"></p>
 
-  <div class="log">
-    <h2>🕒 Gas Detection Log</h2>
-    <ul id="gasLog"></ul>
-  </div>
+<canvas id="chart"></canvas>
 
-  <script>
-    const CHANNEL_ID = "3208976";
-    const READ_API_KEY = "OACUOG6F0U6AJRIT";
-    const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=200`;
+<div class="log">
+  <h2>🕒 Gas Detection Log</h2>
+  <ul id="gasLog"></ul>
+</div>
 
-    let rawFeeds = [];
-    let currentRange = "all";
+<script>
+const CHANNEL_ID = "3208976";
+const READ_API_KEY = "OACUOG6F0U6AJRIT";
+const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=500`;
 
-    const TEMP_COLOR = "#f97316";
-    const HUM_COLOR = "#38bdf8";
+let rawFeeds = [];
+let filteredFeeds = [];
+let currentFilter = "all";
 
-    function fullTimestamp(d) {
-      return d.toLocaleString("en-GB", {
-        day: "2-digit", month: "long", year: "numeric",
-        hour: "2-digit", minute: "2-digit", second: "2-digit"
-      });
-    }
+function fullTS(d) {
+  return d.toLocaleString("en-GB", {
+    day: "2-digit", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit"
+  });
+}
 
-    function logTimestamp(d) {
-      return d.toLocaleString("en-GB", {
-        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
-      });
-    }
+function applyFilter() {
+  const now = new Date();
+  filteredFeeds = [...rawFeeds];
 
-    const chart = new Chart(document.getElementById("mergedChart"), {
-      type: "line",
-      data: { labels: [], datasets: [] },
-      options: {
-        scales: {
-          x: { ticks: { maxRotation: 0 } }
+  if (currentFilter === "7d") {
+    const c = new Date(now); c.setDate(c.getDate() - 7);
+    filteredFeeds = rawFeeds.filter(f => new Date(f.created_at) >= c);
+  }
+  if (currentFilter === "1m") {
+    const c = new Date(now); c.setMonth(c.getMonth() - 1);
+    filteredFeeds = rawFeeds.filter(f => new Date(f.created_at) >= c);
+  }
+
+  updateUI();
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  applyFilter();
+}
+
+function setCustom() {
+  const f = new Date(document.getElementById("fromDate").value);
+  const t = new Date(document.getElementById("toDate").value);
+  filteredFeeds = rawFeeds.filter(x => {
+    const d = new Date(x.created_at);
+    return d >= f && d <= t;
+  });
+  currentFilter = "custom";
+  updateUI();
+}
+
+const chart = new Chart(document.getElementById("chart"), {
+  type: "line",
+  data: { labels: [], datasets: [] },
+  options: {
+    interaction: { mode: "nearest", intersect: false },
+    scales: {
+      x: {
+        ticks: {
+          callback: (v, i) => i % 1 === 0 ? chart.data.labels[i] : ""
         }
       }
-    });
-
-    function setRange(r) {
-      currentRange = r;
-      updateUI();
     }
+  }
+});
 
-    function updateUI() {
-      let feeds = [...rawFeeds];
+function updateUI() {
+  if (!filteredFeeds.length) return;
 
-      if (currentRange !== "all") {
-        const now = new Date();
-        const cutoff = new Date(now);
-        cutoff.setHours(cutoff.getHours() - (currentRange === "24h" ? 24 : 168));
-        feeds = feeds.filter(f => new Date(f.created_at) >= cutoff);
-      }
+  const labels = filteredFeeds.map(f => fullTS(new Date(f.created_at)));
+  const temp = filteredFeeds.map(f => Number(f.field1));
+  const hum = filteredFeeds.map(f => Number(f.field2));
 
-      const labels = feeds.map(f => fullTimestamp(new Date(f.created_at)));
-      const tempData = feeds.map(f => Number(f.field1));
-      const humData = feeds.map(f => Number(f.field2));
-
-      const gasMarkers = feeds.map((f, i) =>
-        f.field3 == "1" ? {
-          x: labels[i],
-          borderColor: "#ef4444",
-          borderWidth: 2,
-          borderDash: [6, 6]
-        } : null
-      ).filter(Boolean);
-
-      chart.data = {
-        labels,
-        datasets: [
-          {
-            label: "Temperature (°C)",
-            data: tempData,
-            borderColor: TEMP_COLOR,
-            tension: 0.3
-          },
-          {
-            label: "Humidity (%)",
-            data: humData,
-            borderColor: HUM_COLOR,
-            tension: 0.3
-          }
-        ]
-      };
-
-      chart.options.plugins = {
-        annotation: { annotations: gasMarkers }
-      };
-
-      chart.update();
-
-      const last = feeds.at(-1);
-      document.getElementById("temp").innerText = last.field1 + " °C";
-      document.getElementById("hum").innerText = last.field2 + " %";
-      document.getElementById("gas").innerHTML =
-        last.field3 == "1"
-          ? "<span class='danger'>🚨 GAS DETECTED</span>"
-          : "<span class='safe'>✅ SAFE</span>";
-
-      document.getElementById("lastUpdated").innerText =
-        "Last updated: " + fullTimestamp(new Date(last.created_at));
-
-      const log = document.getElementById("gasLog");
-      log.innerHTML = "";
-      feeds.slice().reverse().forEach(f => {
-        if (f.field3 == "1") {
-          const li = document.createElement("li");
-          li.innerHTML = `${logTimestamp(new Date(f.created_at))} → <span class="danger">GAS DETECTED</span>`;
-          log.appendChild(li);
-        }
+  const dayLines = [];
+  for (let i = 1; i < filteredFeeds.length; i++) {
+    const d1 = new Date(filteredFeeds[i - 1].created_at).getDate();
+    const d2 = new Date(filteredFeeds[i].created_at).getDate();
+    if (d1 !== d2) {
+      dayLines.push({
+        type: "line",
+        xMin: labels[i],
+        xMax: labels[i],
+        borderColor: "#ef4444",
+        borderWidth: 2,
+        borderDash: [6, 6]
       });
     }
+  }
 
-    function downloadCSV() {
-      let csv = "Timestamp,Temperature,Humidity,Gas\n";
-      rawFeeds.forEach(f => {
-        csv += `${fullTimestamp(new Date(f.created_at))},${f.field1},${f.field2},${f.field3}\n`;
-      });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([csv]));
-      a.download = "air_quality_data.csv";
-      a.click();
+  chart.data = {
+    labels,
+    datasets: [
+      { label: "Temperature (°C)", data: temp, borderColor: "#f97316", tension: 0.3 },
+      { label: "Humidity (%)", data: hum, borderColor: "#38bdf8", tension: 0.3 }
+    ]
+  };
+
+  chart.options.plugins.annotation = { annotations: dayLines };
+  chart.update();
+
+  const last = filteredFeeds.at(-1);
+  document.getElementById("temp").innerText = last.field1 + " °C";
+  document.getElementById("hum").innerText = last.field2 + " %";
+  document.getElementById("gas").innerHTML =
+    last.field3 == "1"
+      ? "<span class='gas-danger'>🚨 GAS DETECTED</span>"
+      : "<span class='gas-safe'>✅ SAFE</span>";
+
+  document.getElementById("rangeLabel").innerText =
+    `Showing data from ${fullTS(new Date(filteredFeeds[0].created_at))} 
+     to ${fullTS(new Date(last.created_at))}`;
+
+  const log = document.getElementById("gasLog");
+  log.innerHTML = "";
+  filteredFeeds.slice().reverse().forEach(f => {
+    if (f.field3 == "1") {
+      const li = document.createElement("li");
+      li.innerText = fullTS(new Date(f.created_at)) + " → GAS DETECTED";
+      log.appendChild(li);
     }
+  });
+}
 
-    function downloadChart() {
-      const a = document.createElement("a");
-      a.href = chart.canvas.toDataURL("image/png", 0.7);
-      a.download = "air_quality_chart.png";
-      a.click();
-    }
+function downloadCSV() {
+  let csv = "Timestamp,Temperature,Humidity,Gas\n";
+  filteredFeeds.forEach(f => {
+    csv += `${fullTS(new Date(f.created_at))},${f.field1},${f.field2},${f.field3}\n`;
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv]));
+  a.download = `air_quality_${currentFilter}.csv`;
+  a.click();
+}
 
-    fetch(url).then(r => r.json()).then(d => {
-      rawFeeds = d.feeds;
-      updateUI();
-    });
+function downloadPNG() {
+  const a = document.createElement("a");
+  a.href = chart.canvas.toDataURL("image/png", 0.7);
+  a.download = `air_quality_${currentFilter}.png`;
+  a.click();
+}
 
-    setInterval(() => fetch(url).then(r => r.json()).then(d => {
-      rawFeeds = d.feeds;
-      updateUI();
-    }), 20000);
-  </script>
+fetch(url).then(r => r.json()).then(d => {
+  rawFeeds = d.feeds;
+  filteredFeeds = rawFeeds;
+  updateUI();
+});
+
+setInterval(() => fetch(url).then(r => r.json()).then(d => {
+  rawFeeds = d.feeds;
+  applyFilter();
+}), 20000);
+</script>
 
 </body>
 </html>
-
