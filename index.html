@@ -7,8 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <style>
 body {
@@ -151,16 +149,13 @@ h1 {
   margin-bottom: 20px;
 }
 
-.controls button, .controls input {
+.controls button {
   margin: 5px;
   padding: 12px 20px;
   border-radius: 10px;
   border: none;
   font-weight: 600;
   transition: all 0.3s ease;
-}
-
-button {
   background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   color: white;
   cursor: pointer;
@@ -179,20 +174,6 @@ button:hover {
 button.active {
   background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
   box-shadow: 0 0 0 2px #8b5cf6;
-}
-
-.controls input {
-  background: #1e293b;
-  color: white;
-  border: 1px solid #475569;
-  padding: 12px;
-  width: 180px;
-}
-
-.controls input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
 }
 
 .download-buttons {
@@ -359,24 +340,115 @@ canvas {
   font-style: italic;
 }
 
-.date-inputs {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin: 15px 0;
-  flex-wrap: wrap;
+.calendar-container {
+  background: rgba(2, 6, 23, 0.8);
+  padding: 25px;
+  border-radius: 16px;
+  margin-top: 30px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid #334155;
 }
 
-.date-inputs label {
+.calendar-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 5px;
+  margin-bottom: 20px;
 }
 
-.date-range-text {
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.calendar-day-header {
+  text-align: center;
+  padding: 10px;
   color: #38bdf8;
   font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.calendar-day {
+  text-align: center;
+  padding: 12px 5px;
+  border-radius: 8px;
+  cursor: default;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.calendar-day.empty {
+  background: transparent;
+}
+
+.calendar-day.has-data {
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid #22c55e;
+  color: #22c55e;
+  font-weight: bold;
+}
+
+.calendar-day.has-data:hover {
+  background: rgba(34, 197, 94, 0.3);
+  transform: scale(1.05);
+}
+
+.calendar-day.no-data {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  opacity: 0.5;
+}
+
+.calendar-day.today {
+  border: 2px solid #f97316;
+}
+
+.calendar-day-count {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #3b82f6;
+  color: white;
+  font-size: 0.7rem;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.calendar-month-nav button {
+  background: rgba(59, 130, 246, 0.2);
+  border: none;
+  color: #38bdf8;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.calendar-month-nav button:hover {
+  background: rgba(59, 130, 246, 0.4);
+  transform: scale(1.1);
+}
+
+.calendar-current-month {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #38bdf8;
 }
 
 @media (max-width: 768px) {
@@ -395,10 +467,6 @@ canvas {
     align-items: center;
   }
   
-  .controls input {
-    width: 90%;
-  }
-  
   .stats-bar {
     flex-wrap: wrap;
   }
@@ -407,48 +475,15 @@ canvas {
     flex: 1 0 50%;
     margin-bottom: 10px;
   }
-}
-
-.flatpickr-calendar {
-  background: #1e293b !important;
-  color: #e5e7eb !important;
-  border: 1px solid #334155 !important;
-}
-
-.flatpickr-day {
-  color: #e5e7eb !important;
-}
-
-.flatpickr-day.selected {
-  background: #3b82f6 !important;
-  border-color: #3b82f6 !important;
-}
-
-.flatpickr-day.today {
-  border-color: #f97316 !important;
-}
-
-.flatpickr-day.has-record {
-  background: #10b981 !important;
-  color: white !important;
-  font-weight: bold !important;
-}
-
-.flatpickr-day.has-record:hover {
-  background: #059669 !important;
-}
-
-.flatpickr-weekdays {
-  background: #0f172a !important;
-}
-
-.flatpickr-weekday {
-  color: #94a3b8 !important;
-}
-
-.flatpickr-month {
-  background: #0f172a !important;
-  color: #e5e7eb !important;
+  
+  .calendar-grid {
+    gap: 4px;
+  }
+  
+  .calendar-day {
+    padding: 8px 2px;
+    font-size: 0.9rem;
+  }
 }
 </style>
 </head>
@@ -508,21 +543,6 @@ canvas {
     </button>
   </div>
   
-  <div class="date-inputs">
-    <label>
-      <i class="fas fa-calendar-day"></i> From:
-      <input type="text" id="fromDate" placeholder="Select Start Date" style="width: 140px;">
-    </label>
-    <span class="date-range-text">→</span>
-    <label>
-      <i class="fas fa-calendar-day"></i> To:
-      <input type="text" id="toDate" placeholder="Select End Date" style="width: 140px;">
-    </label>
-    <button onclick="setCustom()">
-      <i class="fas fa-calendar-check"></i> Apply Range
-    </button>
-  </div>
-  
   <div class="filter-info">
     <span id="filterDescription">Showing all available data</span>
   </div>
@@ -562,6 +582,39 @@ canvas {
   <canvas id="chart"></canvas>
 </div>
 
+<div class="calendar-container">
+  <div class="calendar-header">
+    <div class="calendar-month-nav">
+      <button onclick="changeMonth(-1)" title="Previous Month">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <div class="calendar-current-month" id="currentMonth">January 2024</div>
+      <button onclick="changeMonth(1)" title="Next Month">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+    <div class="calendar-legend">
+      <small>
+        <span style="color:#22c55e"><i class="fas fa-square"></i> Has Data</span> | 
+        <span style="color:#f97316"><i class="fas fa-square"></i> Today</span>
+      </small>
+    </div>
+  </div>
+  
+  <div class="calendar-grid">
+    <div class="calendar-day-header">Sun</div>
+    <div class="calendar-day-header">Mon</div>
+    <div class="calendar-day-header">Tue</div>
+    <div class="calendar-day-header">Wed</div>
+    <div class="calendar-day-header">Thu</div>
+    <div class="calendar-day-header">Fri</div>
+    <div class="calendar-day-header">Sat</div>
+    
+    <!-- Calendar days will be generated by JavaScript -->
+    <div id="calendarDays"></div>
+  </div>
+</div>
+
 <div class="log">
   <div class="log-header">
     <h2><i class="fas fa-history"></i> Gas Detection Log</h2>
@@ -578,7 +631,8 @@ const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_ke
 let rawFeeds = [];
 let filteredFeeds = [];
 let currentFilter = "all";
-let calendarDatesWithData = new Set();
+let calendarCurrentDate = new Date();
+let datesWithData = {};
 
 function fullTS(d) {
   return d.toLocaleString("en-GB", {
@@ -593,20 +647,17 @@ function shortDate(d) {
   });
 }
 
-function formatDateForCalendar(date) {
-  // Format as YYYY-MM-DD for calendar comparison
-  return date.toISOString().split('T')[0];
+function formatDateKey(date) {
+  return date.toISOString().split('T')[0]; // YYYY-MM-DD
 }
 
 function updateButtonStates() {
-  // Remove active class from all buttons
-  const buttons = ['all', '7d', '1m', 'yesterday', 'today', 'custom'];
+  const buttons = ['all', '7d', '1m', 'yesterday', 'today'];
   buttons.forEach(btn => {
     const element = document.getElementById(`btn-${btn}`);
     if (element) element.classList.remove('active');
   });
   
-  // Add active class to current filter button
   const currentBtn = document.getElementById(`btn-${currentFilter}`);
   if (currentBtn) currentBtn.classList.add('active');
 }
@@ -671,85 +722,96 @@ function setFilter(f) {
   applyFilter();
 }
 
-function setCustom() {
-  const fromDateStr = document.getElementById("fromDate").value;
-  const toDateStr = document.getElementById("toDate").value;
-  
-  if (!fromDateStr || !toDateStr) {
-    alert("Please select both start and end dates");
-    return;
-  }
-  
-  // Parse dates and set proper time boundaries
-  const f = new Date(fromDateStr);
-  f.setHours(0, 0, 0, 0);
-  
-  const t = new Date(toDateStr);
-  t.setHours(23, 59, 59, 999);
-
-  filteredFeeds = rawFeeds.filter(x => {
-    const d = new Date(x.created_at);
-    return d >= f && d <= t;
-  });
-
-  currentFilter = "custom";
-  updateFilterDescription(`Showing data from ${shortDate(f)} to ${shortDate(t)}`);
-  updateButtonStates();
-  updateUI();
-}
-
 function updateFilterDescription(text) {
   document.getElementById("filterDescription").textContent = text;
 }
 
-function setupCalendarHighlighting() {
-  // Collect all unique dates from raw feeds
-  calendarDatesWithData.clear();
+function updateCalendar() {
+  // Get current month and year
+  const year = calendarCurrentDate.getFullYear();
+  const month = calendarCurrentDate.getMonth();
+  
+  // Update month display
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+                     "July", "August", "September", "October", "November", "December"];
+  document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+  
+  // Get first day of month and total days
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const startingDay = firstDay.getDay(); // 0 = Sunday
+  
+  // Clear previous calendar
+  const calendarDays = document.getElementById('calendarDays');
+  calendarDays.innerHTML = '';
+  
+  // Add empty cells for days before the first day of the month
+  for (let i = 0; i < startingDay; i++) {
+    const emptyDay = document.createElement('div');
+    emptyDay.className = 'calendar-day empty';
+    calendarDays.appendChild(emptyDay);
+  }
+  
+  // Add days of the month
+  const today = new Date();
+  const todayKey = formatDateKey(today);
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayDate = new Date(year, month, day);
+    const dayKey = formatDateKey(dayDate);
+    
+    const dayElement = document.createElement('div');
+    dayElement.className = 'calendar-day';
+    dayElement.textContent = day;
+    
+    // Check if this date has data
+    if (datesWithData[dayKey]) {
+      dayElement.classList.add('has-data');
+      dayElement.title = `${datesWithData[dayKey]} records on ${dayKey}`;
+      
+      // Add count badge
+      const countBadge = document.createElement('div');
+      countBadge.className = 'calendar-day-count';
+      countBadge.textContent = datesWithData[dayKey];
+      dayElement.appendChild(countBadge);
+    } else {
+      dayElement.classList.add('no-data');
+      dayElement.title = `No data recorded on ${dayKey}`;
+    }
+    
+    // Highlight today
+    if (dayKey === todayKey) {
+      dayElement.classList.add('today');
+      dayElement.title += ' (Today)';
+    }
+    
+    calendarDays.appendChild(dayElement);
+  }
+}
+
+function changeMonth(delta) {
+  calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + delta);
+  updateCalendar();
+}
+
+function analyzeDatesWithData() {
+  // Reset datesWithData
+  datesWithData = {};
+  
+  // Count records per date
   rawFeeds.forEach(feed => {
     const date = new Date(feed.created_at);
-    const dateStr = formatDateForCalendar(date);
-    calendarDatesWithData.add(dateStr);
-  });
-  
-  // Initialize flatpickr with custom styling
-  const fromDatePicker = flatpickr("#fromDate", {
-    dateFormat: "Y-m-d",
-    onChange: function(selectedDates, dateStr, instance) {
-      // Highlight dates with data
-      instance.redraw();
-    },
-    onDayCreate: function(dObj, dStr, fp, dayElem) {
-      // Check if this date has data
-      const dateStr = dayElem.dateObj.toISOString().split('T')[0];
-      if (calendarDatesWithData.has(dateStr)) {
-        dayElem.classList.add("has-record");
-        dayElem.title = "Data available for this date";
-      }
+    const dateKey = formatDateKey(date);
+    
+    if (!datesWithData[dateKey]) {
+      datesWithData[dateKey] = 0;
     }
+    datesWithData[dateKey]++;
   });
   
-  const toDatePicker = flatpickr("#toDate", {
-    dateFormat: "Y-m-d",
-    onChange: function(selectedDates, dateStr, instance) {
-      instance.redraw();
-    },
-    onDayCreate: function(dObj, dStr, fp, dayElem) {
-      // Check if this date has data
-      const dateStr = dayElem.dateObj.toISOString().split('T')[0];
-      if (calendarDatesWithData.has(dateStr)) {
-        dayElem.classList.add("has-record");
-        dayElem.title = "Data available for this date";
-      }
-    }
-  });
-  
-  // Set default dates
-  const today = new Date();
-  const weekAgo = new Date();
-  weekAgo.setDate(today.getDate() - 7);
-  
-  fromDatePicker.setDate(weekAgo, false);
-  toDatePicker.setDate(today, false);
+  // Update calendar
+  updateCalendar();
 }
 
 const chart = new Chart(document.getElementById("chart"), {
@@ -903,19 +965,17 @@ function updateUI() {
   const start = new Date(filteredFeeds[0].created_at);
   const end = new Date(filteredFeeds.at(-1).created_at);
 
-  // ----- Dynamic chart title -----
+  // Dynamic chart title
   let titleText = "Air Quality Trend";
   if (currentFilter === "7d") titleText += " (Last 7 Days)";
   else if (currentFilter === "1m") titleText += " (Last 1 Month)";
   else if (currentFilter === "yesterday") titleText += " (Yesterday)";
   else if (currentFilter === "today") titleText += " (Today)";
-  else if (currentFilter === "custom")
-    titleText += ` (${shortDate(start)} → ${shortDate(end)})`;
   else titleText += " (All Data)";
 
   chart.options.plugins.title.text = titleText;
 
-  // Create labels with date and time for better readability
+  // Create labels
   const labels = filteredFeeds.map(f => {
     const date = new Date(f.created_at);
     return date.toLocaleTimeString("en-GB", {
@@ -1013,8 +1073,8 @@ function updateLogs() {
   // Get gas detection events from filtered feeds
   const gasEvents = filteredFeeds
     .filter(f => f.field3 == "1")
-    .slice() // Create a copy
-    .reverse(); // Show latest first
+    .slice()
+    .reverse();
   
   const logCount = document.getElementById("logCount");
   logCount.textContent = `${gasEvents.length} event${gasEvents.length !== 1 ? 's' : ''}`;
@@ -1054,37 +1114,44 @@ function downloadCSV() {
   const start = new Date(filteredFeeds[0].created_at);
   const end = new Date(filteredFeeds.at(-1).created_at);
   
-  // Create a nicely formatted CSV with colors and styling
-  let csv = `"AIR QUALITY MONITORING DATA"\n`;
-  csv += `"Generated: ${fullTS(new Date())}"\n`;
-  csv += `"Filter: ${currentFilter.toUpperCase()}"\n`;
-  csv += `"Date Range: ${shortDate(start)} to ${shortDate(end)}"\n\n`;
+  // Clean CSV content - remove special characters and ensure proper formatting
+  let csv = "AIR QUALITY MONITORING DATA\n";
+  csv += "Generated: " + fullTS(new Date()) + "\n";
+  csv += "Filter: " + currentFilter.toUpperCase() + "\n";
+  csv += "Date Range: " + shortDate(start) + " to " + shortDate(end) + "\n\n";
   
-  // Header with emojis
-  csv += `"Timestamp","Temperature (°C)","Humidity (%)","Gas Status","Notes"\n`;
+  // Header
+  csv += "Timestamp,Temperature (C),Humidity (%),Gas Status,Notes\n";
   
   filteredFeeds.forEach(f => {
     const timestamp = fullTS(new Date(f.created_at));
     const temp = f.field1 || "N/A";
     const hum = f.field2 || "N/A";
-    const gasStatus = f.field3 == "1" ? "⚠️ GAS DETECTED" : "✅ SAFE";
+    const gasStatus = f.field3 == "1" ? "GAS DETECTED" : "SAFE";
     
-    // Add some conditional notes
+    // Clean notes - remove any non-printable characters
     let notes = "";
     if (f.field3 == "1") notes = "Alert: Gas detected";
     if (parseFloat(temp) > 35) notes += (notes ? "; " : "") + "High temperature";
     if (parseFloat(hum) > 80) notes += (notes ? "; " : "") + "High humidity";
     if (!notes) notes = "Normal conditions";
     
-    csv += `"${timestamp}","${temp}","${hum}","${gasStatus}","${notes}"\n`;
+    // Clean all fields to remove special characters
+    const cleanTimestamp = timestamp.replace(/[^\x20-\x7E]/g, '');
+    const cleanTemp = temp.toString().replace(/[^\x20-\x7E]/g, '');
+    const cleanHum = hum.toString().replace(/[^\x20-\x7E]/g, '');
+    const cleanGasStatus = gasStatus.replace(/[^\x20-\x7E]/g, '');
+    const cleanNotes = notes.replace(/[^\x20-\x7E]/g, '');
+    
+    csv += `"${cleanTimestamp}",${cleanTemp},${cleanHum},"${cleanGasStatus}","${cleanNotes}"\n`;
   });
   
-  // Add summary section
-  csv += `\n"SUMMARY STATISTICS"\n`;
-  csv += `"Total Records:","${filteredFeeds.length}"\n`;
+  // Add summary statistics
+  csv += "\nSUMMARY STATISTICS\n";
+  csv += "Total Records," + filteredFeeds.length + "\n";
   
   const gasEvents = filteredFeeds.filter(f => f.field3 == "1").length;
-  csv += `"Gas Detection Events:","${gasEvents}"\n`;
+  csv += "Gas Detection Events," + gasEvents + "\n";
   
   const temps = filteredFeeds.map(f => parseFloat(f.field1)).filter(t => !isNaN(t));
   const hums = filteredFeeds.map(f => parseFloat(f.field2)).filter(h => !isNaN(h));
@@ -1093,32 +1160,37 @@ function downloadCSV() {
     const avgTemp = (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1);
     const minTemp = Math.min(...temps).toFixed(1);
     const maxTemp = Math.max(...temps).toFixed(1);
-    csv += `"Temperature - Avg:","${avgTemp} °C"\n`;
-    csv += `"Temperature - Min:","${minTemp} °C"\n`;
-    csv += `"Temperature - Max:","${maxTemp} °C"\n`;
+    csv += "Temperature - Avg (C)," + avgTemp + "\n";
+    csv += "Temperature - Min (C)," + minTemp + "\n";
+    csv += "Temperature - Max (C)," + maxTemp + "\n";
   }
   
   if (hums.length > 0) {
     const avgHum = (hums.reduce((a, b) => a + b, 0) / hums.length).toFixed(1);
     const minHum = Math.min(...hums).toFixed(1);
     const maxHum = Math.max(...hums).toFixed(1);
-    csv += `"Humidity - Avg:","${avgHum} %"\n`;
-    csv += `"Humidity - Min:","${minHum} %"\n`;
-    csv += `"Humidity - Max:","${maxHum} %"\n`;
+    csv += "Humidity - Avg (%)," + avgHum + "\n";
+    csv += "Humidity - Min (%)," + minHum + "\n";
+    csv += "Humidity - Max (%)," + maxHum + "\n";
   }
   
-  // Create a filename based on filter and date range
+  // Create filename based on filter
   let filename;
+  const currentDate = new Date();
+  const dateStr = currentDate.toISOString().split('T')[0];
+  
   if (currentFilter === "custom") {
-    const fromStr = shortDate(start).replace(/ /g, '_');
-    const toStr = shortDate(end).replace(/ /g, '_');
+    const fromStr = start.toISOString().split('T')[0];
+    const toStr = end.toISOString().split('T')[0];
     filename = `Air_Quality_${fromStr}_to_${toStr}.csv`;
   } else {
-    const dateStr = shortDate(new Date()).replace(/ /g, '_');
     filename = `Air_Quality_${currentFilter}_${dateStr}.csv`;
   }
   
-  // Create and trigger download
+  // Clean filename
+  filename = filename.replace(/[^\w\-.]/g, '_');
+  
+  // Create and download CSV
   const a = document.createElement("a");
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -1139,16 +1211,21 @@ function downloadPNG() {
   const start = new Date(filteredFeeds[0].created_at);
   const end = new Date(filteredFeeds.at(-1).created_at);
   
-  // Create a filename based on filter and date range
+  // Create filename
   let filename;
+  const currentDate = new Date();
+  const dateStr = currentDate.toISOString().split('T')[0];
+  
   if (currentFilter === "custom") {
-    const fromStr = shortDate(start).replace(/ /g, '_');
-    const toStr = shortDate(end).replace(/ /g, '_');
+    const fromStr = start.toISOString().split('T')[0];
+    const toStr = end.toISOString().split('T')[0];
     filename = `Air_Quality_Chart_${fromStr}_to_${toStr}.png`;
   } else {
-    const dateStr = shortDate(new Date()).replace(/ /g, '_');
     filename = `Air_Quality_Chart_${currentFilter}_${dateStr}.png`;
   }
+  
+  // Clean filename
+  filename = filename.replace(/[^\w\-.]/g, '_');
 
   const a = document.createElement("a");
   a.href = chart.canvas.toDataURL("image/png", 1.0);
@@ -1162,7 +1239,7 @@ fetch(url)
   .then(d => {
     rawFeeds = d.feeds;
     filteredFeeds = rawFeeds;
-    setupCalendarHighlighting();
+    analyzeDatesWithData();
     updateUI();
   })
   .catch(error => {
@@ -1176,7 +1253,7 @@ setInterval(() => {
     .then(r => r.json())
     .then(d => {
       rawFeeds = d.feeds;
-      setupCalendarHighlighting();
+      analyzeDatesWithData();
       applyFilter();
     })
     .catch(error => {
