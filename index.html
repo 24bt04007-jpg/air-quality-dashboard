@@ -340,26 +340,80 @@ canvas {
   font-style: italic;
 }
 
-.calendar-container {
-  background: rgba(2, 6, 23, 0.8);
-  padding: 25px;
-  border-radius: 16px;
-  margin-top: 30px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+.calendar-icon {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.calendar-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
+}
+
+.calendar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  backdrop-filter: blur(5px);
+}
+
+.calendar-modal {
+  background: linear-gradient(145deg, #0f172a, #1e293b);
+  border-radius: 20px;
+  padding: 30px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   border: 1px solid #334155;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .calendar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 8px;
+  margin-bottom: 20px;
 }
 
 .calendar-day-header {
@@ -368,24 +422,31 @@ canvas {
   color: #38bdf8;
   font-weight: bold;
   font-size: 0.9rem;
+  text-transform: uppercase;
 }
 
 .calendar-day {
   text-align: center;
   padding: 12px 5px;
-  border-radius: 8px;
-  cursor: default;
+  border-radius: 10px;
+  cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .calendar-day.empty {
   background: transparent;
+  cursor: default;
 }
 
 .calendar-day.has-data {
-  background: rgba(34, 197, 94, 0.2);
-  border: 1px solid #22c55e;
+  background: rgba(34, 197, 94, 0.15);
+  border: 2px solid #22c55e;
   color: #22c55e;
   font-weight: bold;
 }
@@ -397,27 +458,32 @@ canvas {
 
 .calendar-day.no-data {
   background: rgba(148, 163, 184, 0.1);
-  color: #94a3b8;
-  opacity: 0.5;
+  color: #64748b;
+  opacity: 0.7;
 }
 
 .calendar-day.today {
-  border: 2px solid #f97316;
+  border: 2px solid #f97316 !important;
+}
+
+.calendar-day.selected {
+  background: #3b82f6 !important;
+  color: white !important;
+  border-color: #3b82f6 !important;
+}
+
+.calendar-day-number {
+  font-size: 1.2rem;
+  font-weight: bold;
 }
 
 .calendar-day-count {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: #3b82f6;
-  color: white;
   font-size: 0.7rem;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin-top: 3px;
+  background: rgba(59, 130, 246, 0.2);
+  padding: 2px 6px;
+  border-radius: 10px;
+  color: #38bdf8;
 }
 
 .calendar-month-nav {
@@ -430,14 +496,15 @@ canvas {
   background: rgba(59, 130, 246, 0.2);
   border: none;
   color: #38bdf8;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+  font-size: 1.2rem;
 }
 
 .calendar-month-nav button:hover {
@@ -446,9 +513,66 @@ canvas {
 }
 
 .calendar-current-month {
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: bold;
   color: #38bdf8;
+  min-width: 200px;
+  text-align: center;
+}
+
+.calendar-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(239, 68, 68, 0.2);
+  border: none;
+  color: #ef4444;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 1.2rem;
+}
+
+.calendar-close:hover {
+  background: rgba(239, 68, 68, 0.4);
+  transform: scale(1.1);
+}
+
+.calendar-stats {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.calendar-stats h4 {
+  color: #38bdf8;
+  margin-top: 0;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.calendar-stat-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.calendar-stat-label {
+  color: #94a3b8;
+}
+
+.calendar-stat-value {
+  color: #e5e7eb;
+  font-weight: bold;
 }
 
 @media (max-width: 768px) {
@@ -476,13 +600,18 @@ canvas {
     margin-bottom: 10px;
   }
   
-  .calendar-grid {
-    gap: 4px;
+  .calendar-modal {
+    width: 95%;
+    padding: 20px;
   }
   
   .calendar-day {
     padding: 8px 2px;
-    font-size: 0.9rem;
+    min-height: 40px;
+  }
+  
+  .calendar-day-number {
+    font-size: 1rem;
   }
 }
 </style>
@@ -500,7 +629,7 @@ canvas {
     <li><i class="fas fa-gas-pump"></i> <b>Gas = 1</b> → Gas detected (unsafe) | <b>Gas = 0</b> → Safe air</li>
     <li><i class="fas fa-calendar-day"></i> Red vertical lines indicate <b>new day</b> transitions</li>
     <li><i class="fas fa-filter"></i> Use filters to view data from specific time periods</li>
-    <li><i class="fas fa-calendar-check"></i> <b>Green dates</b> in calendar have recorded data</li>
+    <li><i class="fas fa-calendar-alt"></i> Click the calendar icon (bottom right) to see data availability</li>
   </ul>
 </div>
 
@@ -582,45 +711,71 @@ canvas {
   <canvas id="chart"></canvas>
 </div>
 
-<div class="calendar-container">
-  <div class="calendar-header">
-    <div class="calendar-month-nav">
-      <button onclick="changeMonth(-1)" title="Previous Month">
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      <div class="calendar-current-month" id="currentMonth">January 2024</div>
-      <button onclick="changeMonth(1)" title="Next Month">
-        <i class="fas fa-chevron-right"></i>
-      </button>
-    </div>
-    <div class="calendar-legend">
-      <small>
-        <span style="color:#22c55e"><i class="fas fa-square"></i> Has Data</span> | 
-        <span style="color:#f97316"><i class="fas fa-square"></i> Today</span>
-      </small>
-    </div>
-  </div>
-  
-  <div class="calendar-grid">
-    <div class="calendar-day-header">Sun</div>
-    <div class="calendar-day-header">Mon</div>
-    <div class="calendar-day-header">Tue</div>
-    <div class="calendar-day-header">Wed</div>
-    <div class="calendar-day-header">Thu</div>
-    <div class="calendar-day-header">Fri</div>
-    <div class="calendar-day-header">Sat</div>
-    
-    <!-- Calendar days will be generated by JavaScript -->
-    <div id="calendarDays"></div>
-  </div>
-</div>
-
 <div class="log">
   <div class="log-header">
     <h2><i class="fas fa-history"></i> Gas Detection Log</h2>
     <div class="log-count" id="logCount">0 events</div>
   </div>
   <ul id="gasLog"></ul>
+</div>
+
+<!-- Calendar Icon -->
+<div class="calendar-icon" onclick="openCalendar()">
+  <i class="fas fa-calendar-alt"></i>
+</div>
+
+<!-- Calendar Modal -->
+<div class="calendar-overlay" id="calendarOverlay" onclick="closeCalendar()">
+  <div class="calendar-modal" onclick="event.stopPropagation()">
+    <button class="calendar-close" onclick="closeCalendar()">
+      <i class="fas fa-times"></i>
+    </button>
+    
+    <div class="calendar-header">
+      <div class="calendar-month-nav">
+        <button onclick="changeMonth(-1)" title="Previous Month">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="calendar-current-month" id="currentMonth">January 2024</div>
+        <button onclick="changeMonth(1)" title="Next Month">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+    
+    <div class="calendar-grid">
+      <div class="calendar-day-header">Sun</div>
+      <div class="calendar-day-header">Mon</div>
+      <div class="calendar-day-header">Tue</div>
+      <div class="calendar-day-header">Wed</div>
+      <div class="calendar-day-header">Thu</div>
+      <div class="calendar-day-header">Fri</div>
+      <div class="calendar-day-header">Sat</div>
+      
+      <!-- Calendar days will be generated by JavaScript -->
+      <div id="calendarDays"></div>
+    </div>
+    
+    <div class="calendar-stats">
+      <h4><i class="fas fa-chart-bar"></i> Data Overview</h4>
+      <div class="calendar-stat-item">
+        <span class="calendar-stat-label">Days with data:</span>
+        <span class="calendar-stat-value" id="daysWithData">0</span>
+      </div>
+      <div class="calendar-stat-item">
+        <span class="calendar-stat-label">Total records:</span>
+        <span class="calendar-stat-value" id="totalRecords">0</span>
+      </div>
+      <div class="calendar-stat-item">
+        <span class="calendar-stat-label">This month:</span>
+        <span class="calendar-stat-value" id="monthRecords">0</span>
+      </div>
+      <div class="calendar-stat-item">
+        <span class="calendar-stat-label">Data coverage:</span>
+        <span class="calendar-stat-value" id="dataCoverage">0%</span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -633,6 +788,18 @@ let filteredFeeds = [];
 let currentFilter = "all";
 let calendarCurrentDate = new Date();
 let datesWithData = {};
+
+// Fix date parsing to handle timezone correctly
+function parseDate(dateString) {
+  // Handle ISO format dates
+  const date = new Date(dateString);
+  
+  // Adjust for local timezone
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  
+  // Create date at midnight local time for consistent day comparison
+  return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate());
+}
 
 function fullTS(d) {
   return d.toLocaleString("en-GB", {
@@ -648,7 +815,11 @@ function shortDate(d) {
 }
 
 function formatDateKey(date) {
-  return date.toISOString().split('T')[0]; // YYYY-MM-DD
+  // Use local date for consistent formatting
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function updateButtonStates() {
@@ -674,7 +845,7 @@ function applyFilter() {
     const cutoffDate = new Date(now); 
     cutoffDate.setDate(cutoffDate.getDate() - 7);
     cutoffDate.setHours(0, 0, 0, 0);
-    filteredFeeds = rawFeeds.filter(f => new Date(f.created_at) >= cutoffDate);
+    filteredFeeds = rawFeeds.filter(f => parseDate(f.created_at) >= cutoffDate);
     updateFilterDescription("Showing last 7 days of data");
   }
   
@@ -682,7 +853,7 @@ function applyFilter() {
     const cutoffDate = new Date(now); 
     cutoffDate.setMonth(cutoffDate.getMonth() - 1);
     cutoffDate.setHours(0, 0, 0, 0);
-    filteredFeeds = rawFeeds.filter(f => new Date(f.created_at) >= cutoffDate);
+    filteredFeeds = rawFeeds.filter(f => parseDate(f.created_at) >= cutoffDate);
     updateFilterDescription("Showing last 1 month of data");
   }
   
@@ -694,7 +865,7 @@ function applyFilter() {
     yesterdayEnd.setHours(23, 59, 59, 999);
     
     filteredFeeds = rawFeeds.filter(f => {
-      const d = new Date(f.created_at);
+      const d = parseDate(f.created_at);
       return d >= yesterday && d <= yesterdayEnd;
     });
     updateFilterDescription(`Showing data from ${shortDate(yesterday)} (Yesterday)`);
@@ -707,7 +878,7 @@ function applyFilter() {
     todayEnd.setHours(23, 59, 59, 999);
     
     filteredFeeds = rawFeeds.filter(f => {
-      const d = new Date(f.created_at);
+      const d = parseDate(f.created_at);
       return d >= today && d <= todayEnd;
     });
     updateFilterDescription(`Showing data from ${shortDate(today)} (Today)`);
@@ -724,6 +895,30 @@ function setFilter(f) {
 
 function updateFilterDescription(text) {
   document.getElementById("filterDescription").textContent = text;
+}
+
+function analyzeDatesWithData() {
+  // Reset datesWithData
+  datesWithData = {};
+  
+  // Count records per date using local time
+  rawFeeds.forEach(feed => {
+    const date = parseDate(feed.created_at);
+    const dateKey = formatDateKey(date);
+    
+    if (!datesWithData[dateKey]) {
+      datesWithData[dateKey] = 0;
+    }
+    datesWithData[dateKey]++;
+  });
+  
+  // Update calendar if it's open
+  if (document.getElementById('calendarOverlay').style.display === 'flex') {
+    updateCalendar();
+  }
+  
+  // Update calendar statistics
+  updateCalendarStats();
 }
 
 function updateCalendar() {
@@ -763,21 +958,26 @@ function updateCalendar() {
     
     const dayElement = document.createElement('div');
     dayElement.className = 'calendar-day';
-    dayElement.textContent = day;
+    
+    // Add day number
+    const dayNumber = document.createElement('div');
+    dayNumber.className = 'calendar-day-number';
+    dayNumber.textContent = day;
+    dayElement.appendChild(dayNumber);
     
     // Check if this date has data
     if (datesWithData[dayKey]) {
       dayElement.classList.add('has-data');
-      dayElement.title = `${datesWithData[dayKey]} records on ${dayKey}`;
+      dayElement.title = `${datesWithData[dayKey]} records on ${dayDate.toLocaleDateString()}`;
       
       // Add count badge
       const countBadge = document.createElement('div');
       countBadge.className = 'calendar-day-count';
-      countBadge.textContent = datesWithData[dayKey];
+      countBadge.textContent = `${datesWithData[dayKey]} rec`;
       dayElement.appendChild(countBadge);
     } else {
       dayElement.classList.add('no-data');
-      dayElement.title = `No data recorded on ${dayKey}`;
+      dayElement.title = `No data recorded on ${dayDate.toLocaleDateString()}`;
     }
     
     // Highlight today
@@ -790,29 +990,61 @@ function updateCalendar() {
   }
 }
 
+function updateCalendarStats() {
+  if (!rawFeeds.length) return;
+  
+  const totalRecords = rawFeeds.length;
+  const daysWithDataCount = Object.keys(datesWithData).length;
+  
+  // Get current month records
+  const currentYear = calendarCurrentDate.getFullYear();
+  const currentMonth = calendarCurrentDate.getMonth();
+  const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  
+  let monthRecords = 0;
+  Object.keys(datesWithData).forEach(dateKey => {
+    if (dateKey.startsWith(monthPrefix)) {
+      monthRecords += datesWithData[dateKey];
+    }
+  });
+  
+  // Calculate data coverage (percentage of days with data in current month)
+  const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const daysWithDataInMonth = Object.keys(datesWithData).filter(dateKey => 
+    dateKey.startsWith(monthPrefix)
+  ).length;
+  
+  const dataCoverage = Math.round((daysWithDataInMonth / daysInCurrentMonth) * 100);
+  
+  // Update stats display
+  document.getElementById('daysWithData').textContent = daysWithDataCount;
+  document.getElementById('totalRecords').textContent = totalRecords;
+  document.getElementById('monthRecords').textContent = monthRecords;
+  document.getElementById('dataCoverage').textContent = `${dataCoverage}%`;
+}
+
 function changeMonth(delta) {
   calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + delta);
   updateCalendar();
+  updateCalendarStats();
 }
 
-function analyzeDatesWithData() {
-  // Reset datesWithData
-  datesWithData = {};
-  
-  // Count records per date
-  rawFeeds.forEach(feed => {
-    const date = new Date(feed.created_at);
-    const dateKey = formatDateKey(date);
-    
-    if (!datesWithData[dateKey]) {
-      datesWithData[dateKey] = 0;
-    }
-    datesWithData[dateKey]++;
-  });
-  
-  // Update calendar
+function openCalendar() {
+  document.getElementById('calendarOverlay').style.display = 'flex';
   updateCalendar();
+  updateCalendarStats();
 }
+
+function closeCalendar() {
+  document.getElementById('calendarOverlay').style.display = 'none';
+}
+
+// Close calendar when pressing Escape key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeCalendar();
+  }
+});
 
 const chart = new Chart(document.getElementById("chart"), {
   type: "line",
@@ -905,7 +1137,7 @@ const chart = new Chart(document.getElementById("chart"), {
           drawBorder: false
         },
         title: {
-          display: true,
+          display:  true,
           text: 'Value',
           color: '#94a3b8',
           font: {
@@ -993,7 +1225,7 @@ function updateUI() {
   let lastDate = null;
   
   filteredFeeds.forEach((feed, index) => {
-    const currentDate = new Date(feed.created_at).toDateString();
+    const currentDate = parseDate(feed.created_at).toDateString();
     if (lastDate !== null && currentDate !== lastDate && index > 0) {
       dayLines.push({
         type: "line",
@@ -1003,7 +1235,7 @@ function updateUI() {
         borderDash: [6, 6],
         borderWidth: 2,
         label: {
-          content: shortDate(new Date(feed.created_at)),
+          content: shortDate(parseDate(feed.created_at)),
           enabled: true,
           position: "start",
           backgroundColor: "rgba(239, 68, 68, 0.1)",
@@ -1114,7 +1346,7 @@ function downloadCSV() {
   const start = new Date(filteredFeeds[0].created_at);
   const end = new Date(filteredFeeds.at(-1).created_at);
   
-  // Clean CSV content - remove special characters and ensure proper formatting
+  // Clean CSV content
   let csv = "AIR QUALITY MONITORING DATA\n";
   csv += "Generated: " + fullTS(new Date()) + "\n";
   csv += "Filter: " + currentFilter.toUpperCase() + "\n";
@@ -1129,21 +1361,21 @@ function downloadCSV() {
     const hum = f.field2 || "N/A";
     const gasStatus = f.field3 == "1" ? "GAS DETECTED" : "SAFE";
     
-    // Clean notes - remove any non-printable characters
+    // Clean notes
     let notes = "";
     if (f.field3 == "1") notes = "Alert: Gas detected";
     if (parseFloat(temp) > 35) notes += (notes ? "; " : "") + "High temperature";
     if (parseFloat(hum) > 80) notes += (notes ? "; " : "") + "High humidity";
     if (!notes) notes = "Normal conditions";
     
-    // Clean all fields to remove special characters
-    const cleanTimestamp = timestamp.replace(/[^\x20-\x7E]/g, '');
-    const cleanTemp = temp.toString().replace(/[^\x20-\x7E]/g, '');
-    const cleanHum = hum.toString().replace(/[^\x20-\x7E]/g, '');
-    const cleanGasStatus = gasStatus.replace(/[^\x20-\x7E]/g, '');
-    const cleanNotes = notes.replace(/[^\x20-\x7E]/g, '');
+    // Remove any special characters and ensure proper CSV formatting
+    const cleanTimestamp = timestamp.replace(/[,\n\r"]/g, ' ').trim();
+    const cleanTemp = temp.toString().replace(/[,\n\r"]/g, ' ').trim();
+    const cleanHum = hum.toString().replace(/[,\n\r"]/g, ' ').trim();
+    const cleanGasStatus = gasStatus.replace(/[,\n\r"]/g, ' ').trim();
+    const cleanNotes = notes.replace(/[,\n\r"]/g, ' ').trim();
     
-    csv += `"${cleanTimestamp}",${cleanTemp},${cleanHum},"${cleanGasStatus}","${cleanNotes}"\n`;
+    csv += `"${cleanTimestamp}","${cleanTemp}","${cleanHum}","${cleanGasStatus}","${cleanNotes}"\n`;
   });
   
   // Add summary statistics
