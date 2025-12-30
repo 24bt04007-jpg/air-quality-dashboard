@@ -789,16 +789,13 @@ let currentFilter = "all";
 let calendarCurrentDate = new Date();
 let datesWithData = {};
 
-// Fix date parsing to handle timezone correctly
+// Fixed date parsing to handle timezone correctly
 function parseDate(dateString) {
-  // Handle ISO format dates
+  // Parse the date string
   const date = new Date(dateString);
   
-  // Adjust for local timezone
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  
-  // Create date at midnight local time for consistent day comparison
-  return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate());
+  // Create a date object in local timezone
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function fullTS(d) {
@@ -815,7 +812,7 @@ function shortDate(d) {
 }
 
 function formatDateKey(date) {
-  // Use local date for consistent formatting
+  // Use local date components for consistent formatting
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -845,7 +842,10 @@ function applyFilter() {
     const cutoffDate = new Date(now); 
     cutoffDate.setDate(cutoffDate.getDate() - 7);
     cutoffDate.setHours(0, 0, 0, 0);
-    filteredFeeds = rawFeeds.filter(f => parseDate(f.created_at) >= cutoffDate);
+    filteredFeeds = rawFeeds.filter(f => {
+      const feedDate = parseDate(f.created_at);
+      return feedDate >= cutoffDate;
+    });
     updateFilterDescription("Showing last 7 days of data");
   }
   
@@ -853,7 +853,10 @@ function applyFilter() {
     const cutoffDate = new Date(now); 
     cutoffDate.setMonth(cutoffDate.getMonth() - 1);
     cutoffDate.setHours(0, 0, 0, 0);
-    filteredFeeds = rawFeeds.filter(f => parseDate(f.created_at) >= cutoffDate);
+    filteredFeeds = rawFeeds.filter(f => {
+      const feedDate = parseDate(f.created_at);
+      return feedDate >= cutoffDate;
+    });
     updateFilterDescription("Showing last 1 month of data");
   }
   
@@ -865,8 +868,8 @@ function applyFilter() {
     yesterdayEnd.setHours(23, 59, 59, 999);
     
     filteredFeeds = rawFeeds.filter(f => {
-      const d = parseDate(f.created_at);
-      return d >= yesterday && d <= yesterdayEnd;
+      const feedDate = parseDate(f.created_at);
+      return feedDate >= yesterday && feedDate <= yesterdayEnd;
     });
     updateFilterDescription(`Showing data from ${shortDate(yesterday)} (Yesterday)`);
   }
@@ -878,8 +881,8 @@ function applyFilter() {
     todayEnd.setHours(23, 59, 59, 999);
     
     filteredFeeds = rawFeeds.filter(f => {
-      const d = parseDate(f.created_at);
-      return d >= today && d <= todayEnd;
+      const feedDate = parseDate(f.created_at);
+      return feedDate >= today && feedDate <= todayEnd;
     });
     updateFilterDescription(`Showing data from ${shortDate(today)} (Today)`);
   }
@@ -903,13 +906,17 @@ function analyzeDatesWithData() {
   
   // Count records per date using local time
   rawFeeds.forEach(feed => {
-    const date = parseDate(feed.created_at);
-    const dateKey = formatDateKey(date);
-    
-    if (!datesWithData[dateKey]) {
-      datesWithData[dateKey] = 0;
+    try {
+      const date = parseDate(feed.created_at);
+      const dateKey = formatDateKey(date);
+      
+      if (!datesWithData[dateKey]) {
+        datesWithData[dateKey] = 0;
+      }
+      datesWithData[dateKey]++;
+    } catch (e) {
+      console.error('Error parsing date:', feed.created_at, e);
     }
-    datesWithData[dateKey]++;
   });
   
   // Update calendar if it's open
@@ -931,7 +938,7 @@ function updateCalendar() {
                      "July", "August", "September", "October", "November", "December"];
   document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
   
-  // Get first day of month and total days
+  // Get first day of month and total days (using local time)
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const daysInMonth = lastDay.getDate();
@@ -1222,11 +1229,13 @@ function updateUI() {
 
   // Add day change annotations
   const dayLines = [];
-  let lastDate = null;
-  
+  let lastDateKey = null;
+
   filteredFeeds.forEach((feed, index) => {
-    const currentDate = parseDate(feed.created_at).toDateString();
-    if (lastDate !== null && currentDate !== lastDate && index > 0) {
+    const currentDate = parseDate(feed.created_at);
+    const currentDateKey = formatDateKey(currentDate);
+    
+    if (lastDateKey !== null && currentDateKey !== lastDateKey && index > 0) {
       dayLines.push({
         type: "line",
         xMin: index - 0.5,
@@ -1235,7 +1244,7 @@ function updateUI() {
         borderDash: [6, 6],
         borderWidth: 2,
         label: {
-          content: shortDate(parseDate(feed.created_at)),
+          content: shortDate(currentDate),
           enabled: true,
           position: "start",
           backgroundColor: "rgba(239, 68, 68, 0.1)",
@@ -1247,7 +1256,7 @@ function updateUI() {
         }
       });
     }
-    lastDate = currentDate;
+    lastDateKey = currentDateKey;
   });
 
   chart.data = {
