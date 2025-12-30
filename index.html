@@ -1,345 +1,681 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<title>Air Quality Monitoring Dashboard</title>
+    <meta charset="UTF-8">
+    <title>Air Quality Monitoring Dashboard</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: #e5e7eb;
-  padding: 20px;
-}
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            padding: 20px;
+        }
 
-h1, h2 {
-  text-align: center;
-}
+        h1,
+        h2 {
+            text-align: center;
+        }
 
-.guide {
-  background: #1e293b;
-  padding: 15px;
-  border-radius: 12px;
-  margin-bottom: 25px;
-  line-height: 1.6;
-}
+        .guide {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
 
-.guide span {
-  font-weight: bold;
-  color: #38bdf8;
-}
+        .guide span {
+            font-weight: bold;
+            color: #38bdf8;
+        }
 
-.cards {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
+        .cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
 
-.card {
-  background: #020617;
-  padding: 20px;
-  border-radius: 12px;
-  width: 260px;
-  text-align: center;
-}
+        .card {
+            background: #020617;
+            padding: 20px;
+            border-radius: 12px;
+            width: 260px;
+            text-align: center;
+        }
 
-.temp { color: #f97316; }
-.hum { color: #38bdf8; }
-.gas-safe { color: #22c55e; }
-.gas-danger { color: #ef4444; }
+        .temp {
+            color: #f97316;
+        }
 
-.controls {
-  text-align: center;
-  margin: 25px 0;
-}
+        .hum {
+            color: #38bdf8;
+        }
 
-.controls button, .controls input {
-  margin: 5px;
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: none;
-}
+        .gas-safe {
+            color: #22c55e;
+        }
 
-button {
-  background: #2563eb;
-  color: white;
-  cursor: pointer;
-}
+        .gas-danger {
+            color: #ef4444;
+        }
 
-canvas {
-  background: #020617;
-  padding: 15px;
-  border-radius: 12px;
-  margin-top: 20px;
-}
+        .controls {
+            text-align: center;
+            margin: 25px 0;
+        }
 
-.rangeLabel {
-  text-align: center;
-  margin-top: 10px;
-  font-style: italic;
-}
+        .controls button,
+        .controls input {
+            margin: 5px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: none;
+        }
 
-.log {
-  background: #020617;
-  padding: 15px;
-  border-radius: 12px;
-  margin-top: 25px;
-  max-height: 250px;
-  overflow-y: auto;
-}
-</style>
+        button {
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+
+        .chart-container {
+            position: relative;
+            background: #020617;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 400px !important;
+        }
+
+        .rangeLabel {
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        .log {
+            background: #020617;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 25px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .slider-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1e293b;
+            border-radius: 12px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .slider-wrapper {
+            position: relative;
+            height: 40px;
+        }
+
+        .slider-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            transform: translateY(-50%);
+        }
+
+        .slider-selection {
+            position: absolute;
+            top: 50%;
+            height: 6px;
+            background: #2563eb;
+            border-radius: 3px;
+            transform: translateY(-50%);
+        }
+
+        .slider-handle {
+            position: absolute;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+        }
+
+        .slider-handle:hover {
+            background: #60a5fa;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .slider-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 
 <body>
 
-<h1>🌍 Air Quality Monitoring Dashboard</h1>
+    <h1>🌍 Air Quality Monitoring Dashboard</h1>
 
-<div class="guide">
-  <p><span>How to read the data:</span></p>
-  <ul>
-    <li>Hover on chart points to see the <b>exact timestamp</b></li>
-    <li>X-axis ticks are shown every <b>2 minutes</b> for readability</li>
-    <li><b>Gas = 1</b> → Gas detected (unsafe)</li>
-    <li><b>Gas = 0</b> → Safe air</li>
-    <li>Red vertical lines indicate <b>new day</b></li>
-  </ul>
-</div>
+    <div class="guide">
+        <p><span>How to read the data:</span></p>
+        <ul>
+            <li>Hover on chart points to see the <b>exact timestamp</b></li>
+            <li>X-axis ticks are shown every <b>2 minutes</b> for readability</li>
+            <li><b>Gas = 1</b> → Gas detected (unsafe)</li>
+            <li><b>Gas = 0</b> → Safe air</li>
+            <li>Red vertical lines indicate <b>new day</b></li>
+            <li>Use the slider below to zoom into specific time ranges</li>
+        </ul>
+    </div>
 
-<div class="cards">
-  <div class="card temp">
-    <h3>Temperature</h3>
-    <p id="temp">-- °C</p>
-  </div>
+    <div class="cards">
+        <div class="card temp">
+            <h3>Temperature</h3>
+            <p id="temp">-- °C</p>
+        </div>
 
-  <div class="card hum">
-    <h3>Humidity</h3>
-    <p id="hum">-- %</p>
-  </div>
+        <div class="card hum">
+            <h3>Humidity</h3>
+            <p id="hum">-- %</p>
+        </div>
 
-  <div class="card">
-    <h3>Gas Status</h3>
-    <p id="gas">--</p>
-  </div>
-</div>
+        <div class="card">
+            <h3>Gas Status</h3>
+            <p id="gas">--</p>
+        </div>
+    </div>
 
-<div class="controls">
-  <button onclick="setFilter('all')">All</button>
-  <button onclick="setFilter('7d')">Last 7 Days</button>
-  <button onclick="setFilter('1m')">Last 1 Month</button>
-  <input type="date" id="fromDate">
-  <input type="date" id="toDate">
-  <button onclick="setCustom()">Apply Date</button>
-  <br><br>
-  <button onclick="downloadCSV()">⬇ CSV</button>
-  <button onclick="downloadPNG()">🖼 Chart</button>
-</div>
+    <div class="controls">
+        <button onclick="setFilter('all')">All</button>
+        <button onclick="setFilter('7d')">Last 7 Days</button>
+        <button onclick="setFilter('1m')">Last 1 Month</button>
+        <input type="date" id="fromDate">
+        <input type="date" id="toDate">
+        <button onclick="setCustom()">Apply Date</button>
+        <br><br>
+        <button onclick="downloadCSV()">⬇ CSV</button>
+        <button onclick="downloadPNG()">🖼 Chart</button>
+    </div>
 
-<p class="rangeLabel" id="rangeLabel"></p>
+    <p class="rangeLabel" id="rangeLabel"></p>
 
-<canvas id="chart"></canvas>
+    <div class="chart-container">
+        <canvas id="chart"></canvas>
+    </div>
 
-<div class="log">
-  <h2>🕒 Gas Detection Log</h2>
-  <ul id="gasLog"></ul>
-</div>
+    <div class="slider-container" id="sliderContainer" style="display: none;">
+        <div class="slider-label">
+            <span id="sliderStartLabel">Start</span>
+            <span id="sliderEndLabel">End</span>
+        </div>
+        <div class="slider-wrapper">
+            <div class="slider-track"></div>
+            <div class="slider-selection" id="sliderSelection"></div>
+            <div class="slider-handle" id="sliderHandle1"></div>
+            <div class="slider-handle" id="sliderHandle2"></div>
+        </div>
+    </div>
 
-<script>
-const CHANNEL_ID = "3208976";
-const READ_API_KEY = "OACUOG6F0U6AJRIT";
-const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=500`;
+    <div class="log">
+        <h2>🕒 Gas Detection Log</h2>
+        <ul id="gasLog"></ul>
+    </div>
 
-let rawFeeds = [];
-let filteredFeeds = [];
-let currentFilter = "all";
+    <script>
+        const CHANNEL_ID = "3208976";
+        const READ_API_KEY = "OACUOG6F0U6AJRIT";
+        const url = `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=500`;
 
-function fullTS(d) {
-  return d.toLocaleString("en-GB", {
-    day: "2-digit", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit", second: "2-digit"
-  });
-}
+        let rawFeeds = [];
+        let filteredFeeds = [];
+        let currentFilter = "all";
+        let sliderActive = false;
+        let sliderStart = 0;
+        let sliderEnd = 100;
 
-function shortDate(d) {
-  return d.toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "numeric"
-  });
-}
-
-function applyFilter() {
-  const now = new Date();
-  filteredFeeds = [...rawFeeds];
-
-  if (currentFilter === "7d") {
-    const c = new Date(now); 
-    c.setDate(c.getDate() - 7);
-    filteredFeeds = rawFeeds.filter(f => new Date(f.created_at) >= c);
-  }
-
-  if (currentFilter === "1m") {
-    const c = new Date(now); 
-    c.setMonth(c.getMonth() - 1);
-    filteredFeeds = rawFeeds.filter(f => new Date(f.created_at) >= c);
-  }
-
-  updateUI();
-}
-
-function setFilter(f) {
-  currentFilter = f;
-  applyFilter();
-}
-
-function setCustom() {
-  const f = new Date(document.getElementById("fromDate").value);
-  const t = new Date(document.getElementById("toDate").value);
-
-  filteredFeeds = rawFeeds.filter(x => {
-    const d = new Date(x.created_at);
-    return d >= f && d <= t;
-  });
-
-  currentFilter = "custom";
-  updateUI();
-}
-
-const chart = new Chart(document.getElementById("chart"), {
-  type: "line",
-  data: { labels: [], datasets: [] },
-  options: {
-    interaction: { mode: "nearest", intersect: false },
-    plugins: {
-      title: {
-        display: true,
-        text: "Air Quality Trend (All Data)",
-        color: "#e5e7eb",
-        font: { size: 16 }
-      }
-    }
-  }
-});
-
-function updateUI() {
-  if (!filteredFeeds.length) return;
-
-  const start = new Date(filteredFeeds[0].created_at);
-  const end = new Date(filteredFeeds.at(-1).created_at);
-
-  // ----- Dynamic chart title -----
-  let titleText = "Air Quality Trend";
-  if (currentFilter === "7d") titleText += " (Last 7 Days)";
-  else if (currentFilter === "1m") titleText += " (Last 1 Month)";
-  else if (currentFilter === "custom")
-    titleText += ` (${shortDate(start)} → ${shortDate(end)})`;
-  else titleText += " (All Data)";
-
-  chart.options.plugins.title.text = titleText;
-
-  const labels = filteredFeeds.map(f =>
-    new Date(f.created_at).toLocaleTimeString("en-GB", {
-      hour: "2-digit", minute: "2-digit"
-    })
-  );
-
-  const temp = filteredFeeds.map(f => Number(f.field1));
-  const hum = filteredFeeds.map(f => Number(f.field2));
-
-  const dayLines = [];
-  for (let i = 1; i < filteredFeeds.length; i++) {
-    const d1 = new Date(filteredFeeds[i - 1].created_at).getDate();
-    const d2 = new Date(filteredFeeds[i].created_at).getDate();
-    if (d1 !== d2) {
-      dayLines.push({
-        type: "line",
-        xMin: labels[i],
-        xMax: labels[i],
-        borderColor: "#ef4444",
-        borderDash: [6, 6],
-        label: {
-          content: shortDate(new Date(filteredFeeds[i].created_at)),
-          enabled: true,
-          position: "start"
+        function fullTS(d) {
+            return d.toLocaleString("en-GB", {
+                day: "2-digit", month: "long", year: "numeric",
+                hour: "2-digit", minute: "2-digit", second: "2-digit"
+            });
         }
-      });
-    }
-  }
 
-  chart.data = {
-    labels,
-    datasets: [
-      { label: "Temperature (°C)", data: temp, borderColor: "#f97316", tension: 0.3 },
-      { label: "Humidity (%)", data: hum, borderColor: "#38bdf8", tension: 0.3 }
-    ]
-  };
+        function shortDate(d) {
+            return d.toLocaleDateString("en-GB", {
+                day: "2-digit", month: "short", year: "numeric"
+            });
+        }
 
-  chart.options.plugins.annotation = { annotations: dayLines };
-  chart.update();
+        function applyFilter() {
+            const now = new Date();
+            filteredFeeds = [...rawFeeds];
 
-  const last = filteredFeeds.at(-1);
-  document.getElementById("temp").innerText = last.field1 + " °C";
-  document.getElementById("hum").innerText = last.field2 + " %";
-  document.getElementById("gas").innerHTML =
-    last.field3 == "1"
-      ? "<span class='gas-danger'>🚨 GAS DETECTED</span>"
-      : "<span class='gas-safe'>✅ SAFE</span>";
+            if (currentFilter === "7d") {
+                const c = new Date(now);
+                c.setDate(c.getDate() - 7);
+                filteredFeeds = rawFeeds.filter(f => new Date(f.created_at) >= c);
+            }
 
-  document.getElementById("rangeLabel").innerText =
-    `Showing data from ${fullTS(start)} to ${fullTS(end)}`;
+            if (currentFilter === "1m") {
+                const c = new Date(now);
+                c.setMonth(c.getMonth() - 1);
+                filteredFeeds = rawFeeds.filter(f => new Date(f.created_at) >= c);
+            }
 
-  const log = document.getElementById("gasLog");
-  log.innerHTML = "";
-  filteredFeeds.slice().reverse().forEach(f => {
-    if (f.field3 == "1") {
-      const li = document.createElement("li");
-      li.innerText = fullTS(new Date(f.created_at)) + " → GAS DETECTED";
-      log.appendChild(li);
-    }
-  });
-}
+            updateUI();
+        }
 
-function downloadCSV() {
-  const start = new Date(filteredFeeds[0].created_at);
-  const end = new Date(filteredFeeds.at(-1).created_at);
+        function setFilter(f) {
+            currentFilter = f;
+            sliderActive = false;
+            document.getElementById('sliderContainer').style.display = 'none';
+            applyFilter();
+        }
 
-  let csv = `Filter,${currentFilter}\n`;
-  csv += `From,${fullTS(start)}\nTo,${fullTS(end)}\n\n`;
-  csv += "Timestamp,Temperature,Humidity,Gas\n";
+        function setCustom() {
+            const f = new Date(document.getElementById("fromDate").value);
+            const t = new Date(document.getElementById("toDate").value);
 
-  filteredFeeds.forEach(f => {
-    csv += `${fullTS(new Date(f.created_at))},${f.field1},${f.field2},${f.field3}\n`;
-  });
+            filteredFeeds = rawFeeds.filter(x => {
+                const d = new Date(x.created_at);
+                return d >= f && d <= t;
+            });
 
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv]));
-  a.download = `air_quality_${currentFilter}_${shortDate(start)}_to_${shortDate(end)}.csv`;
-  a.click();
-}
+            currentFilter = "custom";
+            sliderActive = false;
+            document.getElementById('sliderContainer').style.display = 'none';
+            updateUI();
+        }
 
-function downloadPNG() {
-  const start = new Date(filteredFeeds[0].created_at);
-  const end = new Date(filteredFeeds.at(-1).created_at);
+        const chart = new Chart(document.getElementById("chart"), {
+            type: "line",
+            data: { labels: [], datasets: [] },
+            options: {
+                interaction: { mode: "nearest", intersect: false },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "Air Quality Trend (All Data)",
+                        color: "#e5e7eb",
+                        font: { size: 16 }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            maxTicksLimit: 20,
+                            color: "#94a3b8"
+                        },
+                        grid: { color: "#334155" }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        ticks: { color: "#94a3b8" },
+                        grid: { color: "#334155" }
+                    }
+                },
+                animation: false
+            }
+        });
 
-  const a = document.createElement("a");
-  a.href = chart.canvas.toDataURL("image/png", 0.7);
-  a.download = `air_quality_${currentFilter}_${shortDate(start)}_to_${shortDate(end)}.png`;
-  a.click();
-}
+        function updateSliderUI() {
+            if (!filteredFeeds.length || !sliderActive) return;
 
-fetch(url).then(r => r.json()).then(d => {
-  rawFeeds = d.feeds;
-  filteredFeeds = rawFeeds;
-  updateUI();
-});
+            const container = document.getElementById('sliderContainer');
+            const sliderTrack = document.querySelector('.slider-track');
+            const trackWidth = sliderTrack.offsetWidth;
 
-setInterval(() => fetch(url).then(r => r.json()).then(d => {
-  rawFeeds = d.feeds;
-  applyFilter();
-}), 20000);
-</script>
+            const handle1 = document.getElementById('sliderHandle1');
+            const handle2 = document.getElementById('sliderHandle2');
+            const selection = document.getElementById('sliderSelection');
+
+            const startPos = (sliderStart / 100) * trackWidth;
+            const endPos = (sliderEnd / 100) * trackWidth;
+
+            handle1.style.left = `${startPos}px`;
+            handle2.style.left = `${endPos}px`;
+            selection.style.left = `${startPos}px`;
+            selection.style.width = `${endPos - startPos}px`;
+
+            // Update slider labels
+            const totalPoints = filteredFeeds.length;
+            const startIndex = Math.floor((sliderStart / 100) * totalPoints);
+            const endIndex = Math.floor((sliderEnd / 100) * totalPoints);
+
+            if (startIndex >= 0 && startIndex < totalPoints) {
+                const startDate = new Date(filteredFeeds[startIndex].created_at);
+                document.getElementById('sliderStartLabel').textContent =
+                    startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            if (endIndex >= 0 && endIndex < totalPoints) {
+                const endDate = new Date(filteredFeeds[endIndex].created_at);
+                document.getElementById('sliderEndLabel').textContent =
+                    endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+
+        function updateChartWithSlider() {
+            if (!filteredFeeds.length || !sliderActive) return;
+
+            const totalPoints = filteredFeeds.length;
+            const startIndex = Math.floor((sliderStart / 100) * totalPoints);
+            const endIndex = Math.floor((sliderEnd / 100) * totalPoints);
+
+            const slicedFeeds = filteredFeeds.slice(startIndex, endIndex + 1);
+
+            if (slicedFeeds.length < 2) return;
+
+            const start = new Date(slicedFeeds[0].created_at);
+            const end = new Date(slicedFeeds.at(-1).created_at);
+
+            // Update chart title
+            let titleText = "Air Quality Trend";
+            if (currentFilter === "7d") titleText += " (Last 7 Days)";
+            else if (currentFilter === "1m") titleText += " (Last 1 Month)";
+            else if (currentFilter === "custom")
+                titleText += ` (${shortDate(start)} → ${shortDate(end)})`;
+            else titleText += " (All Data)";
+
+            titleText += " [Zoomed]";
+            chart.options.plugins.title.text = titleText;
+
+            const labels = slicedFeeds.map(f =>
+                new Date(f.created_at).toLocaleTimeString("en-GB", {
+                    hour: "2-digit", minute: "2-digit"
+                })
+            );
+
+            const temp = slicedFeeds.map(f => Number(f.field1));
+            const hum = slicedFeeds.map(f => Number(f.field2));
+
+            chart.data = {
+                labels,
+                datasets: [
+                    { label: "Temperature (°C)", data: temp, borderColor: "#f97316", tension: 0.3 },
+                    { label: "Humidity (%)", data: hum, borderColor: "#38bdf8", tension: 0.3 }
+                ]
+            };
+
+            chart.update();
+
+            // Update range label
+            document.getElementById("rangeLabel").innerText =
+                `Showing data from ${fullTS(start)} to ${fullTS(end)} (Zoomed view)`;
+        }
+
+        function initSlider() {
+            const sliderContainer = document.getElementById('sliderContainer');
+            const track = document.querySelector('.slider-track');
+            const handle1 = document.getElementById('sliderHandle1');
+            const handle2 = document.getElementById('sliderHandle2');
+
+            if (!filteredFeeds.length || filteredFeeds.length < 10) {
+                sliderContainer.style.display = 'none';
+                return;
+            }
+
+            sliderContainer.style.display = 'block';
+            sliderActive = true;
+            sliderStart = 0;
+            sliderEnd = 100;
+
+            let activeHandle = null;
+
+            function getPosition(e) {
+                const rect = track.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                return Math.max(0, Math.min(100, (x / rect.width) * 100));
+            }
+
+            function onMouseDown(e, handle) {
+                e.preventDefault();
+                activeHandle = handle;
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
+
+            function onMouseMove(e) {
+                if (!activeHandle) return;
+
+                const pos = getPosition(e);
+
+                if (activeHandle.id === 'sliderHandle1') {
+                    sliderStart = Math.min(pos, sliderEnd - 1);
+                } else {
+                    sliderEnd = Math.max(pos, sliderStart + 1);
+                }
+
+                updateSliderUI();
+                updateChartWithSlider();
+                updateLogsWithSlider();
+            }
+
+            function onMouseUp() {
+                activeHandle = null;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+
+            handle1.addEventListener('mousedown', (e) => onMouseDown(e, handle1));
+            handle2.addEventListener('mousedown', (e) => onMouseDown(e, handle2));
+
+            // Initialize slider position
+            setTimeout(updateSliderUI, 100);
+        }
+
+        function updateLogsWithSlider() {
+            if (!filteredFeeds.length || !sliderActive) return;
+
+            const totalPoints = filteredFeeds.length;
+            const startIndex = Math.floor((sliderStart / 100) * totalPoints);
+            const endIndex = Math.floor((sliderEnd / 100) * totalPoints);
+
+            const slicedFeeds = filteredFeeds.slice(startIndex, endIndex + 1);
+
+            const log = document.getElementById("gasLog");
+            log.innerHTML = "";
+
+            // Show only gas detection events in the zoomed range
+            slicedFeeds.slice().reverse().forEach(f => {
+                if (f.field3 == "1") {
+                    const li = document.createElement("li");
+                    li.innerText = fullTS(new Date(f.created_at)) + " → GAS DETECTED";
+                    log.appendChild(li);
+                }
+            });
+
+            if (log.children.length === 0) {
+                const li = document.createElement("li");
+                li.innerText = "No gas detection events in this range";
+                li.style.color = "#94a3b8";
+                li.style.fontStyle = "italic";
+                log.appendChild(li);
+            }
+        }
+
+        function updateUI() {
+            if (!filteredFeeds.length) return;
+
+            const start = new Date(filteredFeeds[0].created_at);
+            const end = new Date(filteredFeeds.at(-1).created_at);
+
+            // ----- Dynamic chart title -----
+            let titleText = "Air Quality Trend";
+            if (currentFilter === "7d") titleText += " (Last 7 Days)";
+            else if (currentFilter === "1m") titleText += " (Last 1 Month)";
+            else if (currentFilter === "custom")
+                titleText += ` (${shortDate(start)} → ${shortDate(end)})`;
+            else titleText += " (All Data)";
+
+            chart.options.plugins.title.text = titleText;
+
+            const labels = filteredFeeds.map(f =>
+                new Date(f.created_at).toLocaleTimeString("en-GB", {
+                    hour: "2-digit", minute: "2-digit"
+                })
+            );
+
+            const temp = filteredFeeds.map(f => Number(f.field1));
+            const hum = filteredFeeds.map(f => Number(f.field2));
+
+            const dayLines = [];
+            for (let i = 1; i < filteredFeeds.length; i++) {
+                const d1 = new Date(filteredFeeds[i - 1].created_at).getDate();
+                const d2 = new Date(filteredFeeds[i].created_at).getDate();
+                if (d1 !== d2) {
+                    dayLines.push({
+                        type: "line",
+                        xMin: labels[i],
+                        xMax: labels[i],
+                        borderColor: "#ef4444",
+                        borderDash: [6, 6],
+                        label: {
+                            content: shortDate(new Date(filteredFeeds[i].created_at)),
+                            enabled: true,
+                            position: "start"
+                        }
+                    });
+                }
+            }
+
+            chart.data = {
+                labels,
+                datasets: [
+                    { label: "Temperature (°C)", data: temp, borderColor: "#f97316", tension: 0.3 },
+                    { label: "Humidity (%)", data: hum, borderColor: "#38bdf8", tension: 0.3 }
+                ]
+            };
+
+            chart.options.plugins.annotation = { annotations: dayLines };
+            chart.update();
+
+            const last = filteredFeeds.at(-1);
+            document.getElementById("temp").innerText = last.field1 + " °C";
+            document.getElementById("hum").innerText = last.field2 + " %";
+            document.getElementById("gas").innerHTML =
+                last.field3 == "1"
+                    ? "<span class='gas-danger'>🚨 GAS DETECTED</span>"
+                    : "<span class='gas-safe'>✅ SAFE</span>";
+
+            document.getElementById("rangeLabel").innerText =
+                `Showing data from ${fullTS(start)} to ${fullTS(end)}`;
+
+            // Update logs
+            const log = document.getElementById("gasLog");
+            log.innerHTML = "";
+
+            // Show all gas detection events for the current filter
+            filteredFeeds.slice().reverse().forEach(f => {
+                if (f.field3 == "1") {
+                    const li = document.createElement("li");
+                    li.innerText = fullTS(new Date(f.created_at)) + " → GAS DETECTED";
+                    log.appendChild(li);
+                }
+            });
+
+            if (log.children.length === 0) {
+                const li = document.createElement("li");
+                li.innerText = "No gas detection events in this range";
+                li.style.color = "#94a3b8";
+                li.style.fontStyle = "italic";
+                log.appendChild(li);
+            }
+
+            // Initialize slider
+            initSlider();
+        }
+
+        function downloadCSV() {
+            const start = new Date(filteredFeeds[0].created_at);
+            const end = new Date(filteredFeeds.at(-1).created_at);
+
+            let feedsToDownload = filteredFeeds;
+            let suffix = currentFilter;
+
+            // If slider is active, download only the zoomed data
+            if (sliderActive) {
+                const totalPoints = filteredFeeds.length;
+                const startIndex = Math.floor((sliderStart / 100) * totalPoints);
+                const endIndex = Math.floor((sliderEnd / 100) * totalPoints);
+                feedsToDownload = filteredFeeds.slice(startIndex, endIndex + 1);
+                suffix = `${currentFilter}_zoomed`;
+            }
+
+            let csv = `Filter,${suffix}\n`;
+            csv += `From,${fullTS(new Date(feedsToDownload[0].created_at))}\n`;
+            csv += `To,${fullTS(new Date(feedsToDownload.at(-1).created_at))}\n\n`;
+            csv += "Timestamp,Temperature,Humidity,Gas\n";
+
+            feedsToDownload.forEach(f => {
+                csv += `${fullTS(new Date(f.created_at))},${f.field1},${f.field2},${f.field3}\n`;
+            });
+
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(new Blob([csv]));
+            a.download = `air_quality_${suffix}_${shortDate(start)}_to_${shortDate(end)}.csv`;
+            a.click();
+        }
+
+        function downloadPNG() {
+            const start = new Date(filteredFeeds[0].created_at);
+            const end = new Date(filteredFeeds.at(-1).created_at);
+
+            let suffix = currentFilter;
+
+            // If slider is active, note it in the filename
+            if (sliderActive) {
+                suffix = `${currentFilter}_zoomed`;
+            }
+
+            const a = document.createElement("a");
+            a.href = chart.canvas.toDataURL("image/png", 0.7);
+            a.download = `air_quality_${suffix}_${shortDate(start)}_to_${shortDate(end)}.png`;
+            a.click();
+        }
+
+        fetch(url).then(r => r.json()).then(d => {
+            rawFeeds = d.feeds;
+            filteredFeeds = rawFeeds;
+            updateUI();
+        });
+
+        setInterval(() => fetch(url).then(r => r.json()).then(d => {
+            rawFeeds = d.feeds;
+            applyFilter();
+        }), 20000);
+    </script>
 
 </body>
-</html>
 
+</html>
